@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 
 @pragma('vm:entry-point')
@@ -7,6 +8,12 @@ import 'package:isolate_manager/isolate_manager.dart';
 void performLayoutIsolate(dynamic input) {
   IsolateManagerFunction.customFunction<ImMap, ImMap>(
     input,
+    onInit: (controller) {
+      debugPrint('isolate initialized');
+    },
+    onDispose: (controller) {
+      debugPrint('isolate disposed');
+    },
     onEvent: (controller, ImMap input) {
       final unwrappedInput = input.toUnwrappedMap();
       final iterations = unwrappedInput['iterations'] as int;

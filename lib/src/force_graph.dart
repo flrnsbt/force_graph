@@ -56,7 +56,7 @@ class ForceGraphWidget extends StatefulWidget {
     double progress,
   ) => Column(
     children: [
-      if (progressStep > 0) LinearProgressIndicator(value: progress),
+      if (progress.isFinite) LinearProgressIndicator(value: progress),
       Expanded(child: Center(child: Text('Loading...'))),
     ],
   );

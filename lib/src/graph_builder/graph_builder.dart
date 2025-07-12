@@ -34,6 +34,12 @@ class ForceDirectedGraphBuilder {
     final isolate = IsolateManager.createCustom(
       performLayoutIsolate,
       isDebug: kDebugMode,
+      converter: (value) {
+        if (value is ImType) {
+          return value.unwrap;
+        }
+        return value;
+      },
       workerName: 'assets/packages/force_graph/web/performLayoutIsolate',
     );
     try {
