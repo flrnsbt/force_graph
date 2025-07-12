@@ -10,7 +10,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -71,8 +70,6 @@ class TestPage extends StatelessWidget {
   }
 }
 
-// Assumes your ForceGraphNodeData, ForceGraphEdgeData, GraphComponentStyle are defined
-
 List<ForceGraphNodeData> generateMockGraph({
   int nodeCount = 10,
   int minEdgesPerNode = 5,
@@ -90,7 +87,6 @@ List<ForceGraphNodeData> generateMockGraph({
     Colors.indigo,
   ];
 
-  // Generate nodes first
   for (int i = 0; i < nodeCount; i++) {
     final color = palette[i % palette.length];
     nodes.add(
@@ -103,7 +99,6 @@ List<ForceGraphNodeData> generateMockGraph({
     );
   }
 
-  // Generate edges
   for (final node in nodes) {
     final edgeCount =
         rand.nextInt(maxEdgesPerNode - minEdgesPerNode + 1) + minEdgesPerNode;

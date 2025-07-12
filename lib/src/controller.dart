@@ -621,11 +621,6 @@ class ForceGraphEdge {
 
   ForceGraphEdge(this.joint, this.data, this._controller);
 
-  /// Draws the edge on the canvas.
-  ///
-  /// This will draw a line from the two bodies that are connected by the joint.
-  /// The line will be colored according to the style of the edge and the state
-  /// of the edge (highlighted, disabled, etc.).
   void draw(Canvas canvas) {
     final p1 = joint.bodyA.position.toOffset();
     final p2 = joint.bodyB.position.toOffset();
