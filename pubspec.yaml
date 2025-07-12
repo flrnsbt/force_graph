@@ -1,0 +1,25 @@
+name: force_graph
+description: "Forge2D based force graph"
+version: 0.0.1
+homepage: https://github.com/flrnsbt/force_graph
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  forge2d: ^0.14.0
+  isolate_manager: ^6.0.1
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+  isolate_manager_generator: ^0.0.13
+
+
+flutter:
+  assets: 
+    - web/performLayoutIsolate.js
