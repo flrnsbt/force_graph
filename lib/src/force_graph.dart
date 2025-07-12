@@ -15,7 +15,8 @@ class ForceGraphWidget extends StatefulWidget {
     required this.controller,
     this.showControlBar = true,
     this.controlBarSpacing = const EdgeInsets.all(8),
-    this.controlBarAlignment = Alignment.bottomRight,
+    this.controlBarAlignment,
+    this.controlBarDirection,
     this.nodeTooltipBuilder,
     this.edgeTooltipBuilder,
     this.nodeTooltipSpacing = 8,
@@ -27,8 +28,9 @@ class ForceGraphWidget extends StatefulWidget {
     this.loadingBuilder = _kDefaultLoadingBuilder,
   }) : errorBuilder = errorBuilder ?? _kDefaultErrorBuilder;
   final ForceGraphController controller;
+  final Axis? controlBarDirection;
   final bool showControlBar;
-  final Alignment controlBarAlignment;
+  final Alignment? controlBarAlignment;
   final EdgeInsets controlBarSpacing;
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
@@ -54,11 +56,13 @@ class ForceGraphWidget extends StatefulWidget {
     int progressStep,
     int total,
     double progress,
-  ) => Column(
-    children: [
-      if (progress.isFinite) LinearProgressIndicator(value: progress),
-      Expanded(child: Center(child: Text('Loading...'))),
-    ],
+  ) => SafeArea(
+    child: Column(
+      children: [
+        if (progress.isFinite) LinearProgressIndicator(value: progress),
+        Expanded(child: Center(child: Text('Loading...'))),
+      ],
+    ),
   );
 
   static Widget _kDefaultErrorBuilder(BuildContext context, Object error) =>
@@ -69,7 +73,7 @@ class ForceGraphWidget extends StatefulWidget {
 }
 
 class _GraphPhysicsViewState extends State<ForceGraphWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   World get world => widget.controller.world;
 
   ViewportController get viewportController =>
@@ -133,18 +137,30 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   void onScaleUpdate(ScaleUpdateDetails details) {
     _scheduleAutoMove?.cancel();
 
-    if (isDraggingNode && mouseJoint != null) {
-      final worldTarget = viewportController.screenToWorld(details.focalPoint);
-      mouseJoint?.setTarget(worldTarget);
-    } else if (isPanning) {
-      viewportController.addPan(details.focalPointDelta);
-    }
+    final scale = details.scale;
 
-    if (details.scale != 1.0) {
+    if (scale != 1.0) {
+      double dt = scale - 1;
+      if (dt.isNegative) {
+        dt /= 20;
+      } else {
+        dt /= 40;
+      }
+      final zoomScale = 1 + dt;
       viewportController.multiplyZoom(
-        details.scale,
+        zoomScale,
         focalPoint: details.focalPoint,
+        animationDuration: Duration.zero,
       );
+    } else {
+      if (isDraggingNode && mouseJoint != null) {
+        final worldTarget = viewportController.screenToWorld(
+          details.focalPoint,
+        );
+        mouseJoint?.setTarget(worldTarget);
+      } else if (isPanning) {
+        viewportController.addPan(details.focalPointDelta);
+      }
     }
   }
 
@@ -325,79 +341,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         ),
       );
     }
+
     return Stack(
       fit: StackFit.expand,
       children: [
         Opacity(opacity: isReady ? 1 : 0.01, child: child),
-        if (isReady) ...[
-          _buildTooltips(),
-          if (widget.showControlBar)
-            _buildPositioned(
-              Material(
-                type: MaterialType.transparency,
-                child:
-                    widget.customControlBarBuilder?.call(
-                      context,
-                      widget.controller,
-                    ) ??
-                    Container(
-                      width: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.black38,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'Reload',
-                            icon: const Icon(Icons.refresh),
-                            color: Colors.white,
-                            onPressed: () {
-                              widget.controller.reload();
-                            },
-                          ),
-
-                          const Divider(),
-                          const Divider(),
-                          IconButton(
-                            tooltip: 'Recenter',
-                            icon: const Icon(Icons.center_focus_strong),
-                            color: Colors.white,
-                            onPressed: () {
-                              widget.controller.recenter(true);
-                            },
-                          ),
-                          const Divider(),
-                          ZoomControllerWidget(
-                            zoom: viewportController.zoom,
-                            onZoomChanged: (value, fromSlider, fromLongPress) {
-                              if (fromSlider) {
-                                viewportController.applyZoom(
-                                  value,
-                                  duration: Duration.zero,
-                                );
-                              } else if (fromLongPress) {
-                                viewportController.applyZoom(
-                                  value,
-                                  unboundedProgressFactor: 0.2,
-                                  duration: Duration(milliseconds: 1500),
-                                );
-                              } else {
-                                viewportController.applyZoom(
-                                  value,
-                                  duration: Duration(milliseconds: 200),
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-              ),
-            ),
-        ] else if (hasError)
+        if (isReady)
+          ..._buildOverlays()
+        else if (hasError)
           Positioned.fill(child: widget.errorBuilder(context, error))
         else if (widget.loadingBuilder != null)
           Positioned.fill(
@@ -410,6 +361,41 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
           ),
       ],
     );
+  }
+
+  List<Widget> _buildOverlays() {
+    final size = viewportController.screenSize;
+    final bool moreHeightThanWidth = size.height > size.width;
+    final controlBarAlignment =
+        widget.controlBarAlignment ??
+        (moreHeightThanWidth ? Alignment.bottomCenter : Alignment.bottomRight);
+    final direction =
+        widget.controlBarDirection ??
+        (moreHeightThanWidth ? Axis.horizontal : Axis.vertical);
+    return [
+      _buildTooltips(),
+      if (widget.showControlBar)
+        Align(
+          alignment: controlBarAlignment,
+          child: SafeArea(
+            minimum: widget.controlBarSpacing,
+            child: Material(
+              type: MaterialType.transparency,
+              child:
+                  widget.customControlBarBuilder?.call(
+                    context,
+                    widget.controller,
+                  ) ??
+                  _ControlBar(
+                    controller: widget.controller,
+                    controlBarSpacing: widget.controlBarSpacing,
+                    controlBarAlignment: controlBarAlignment,
+                    controlBarDirection: direction,
+                  ),
+            ),
+          ),
+        ),
+    ];
   }
 
   @override
@@ -427,13 +413,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     widget.controller.removeListener(() {});
 
     super.dispose();
-  }
-
-  Widget _buildPositioned(Widget child) {
-    return Align(
-      alignment: widget.controlBarAlignment,
-      child: Padding(padding: widget.controlBarSpacing, child: child),
-    );
   }
 
   Widget _buildTooltips() {
@@ -496,6 +475,192 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     } else {
       _scheduleAutoMove?.cancel();
       widget.controller.stopNodesAutoMove();
+    }
+  }
+}
+
+class _ControlBar extends StatefulWidget {
+  const _ControlBar({
+    super.key,
+    required this.controller,
+    required this.controlBarAlignment,
+    required this.controlBarDirection,
+    required this.controlBarSpacing,
+  });
+  final ForceGraphController controller;
+  final Alignment controlBarAlignment;
+  final Axis controlBarDirection;
+  final EdgeInsets controlBarSpacing;
+
+  @override
+  State<_ControlBar> createState() => _ControlBarState();
+}
+
+class _ControlBarState extends State<_ControlBar> {
+  bool _opaque = true;
+
+  bool _hidden = false;
+
+  Timer? _scheduleDisable;
+  Timer? _scheduleHide;
+  @override
+  void dispose() {
+    _scheduleHide?.cancel();
+    _scheduleDisable?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleDisableControlBar([
+    Duration duration = const Duration(seconds: 1),
+  ]) {
+    _scheduleDisable?.cancel();
+    _scheduleDisable = Timer(duration, () {
+      if (mounted && _opaque) {
+        setState(() {
+          _opaque = false;
+        });
+      }
+    });
+  }
+
+  void _scheduleHideControlBar([
+    Duration duration = const Duration(seconds: 1),
+  ]) {
+    _scheduleHide?.cancel();
+    _scheduleHide = Timer(duration, () {
+      if (mounted && !_hidden) {
+        setState(() {
+          _hidden = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewportController = widget.controller.viewportController;
+
+    final bool isHorizontal = widget.controlBarDirection == Axis.horizontal;
+    final divider = isHorizontal ? const VerticalDivider() : const Divider();
+    final hideOffset = _getHideOffset(widget.controlBarAlignment);
+    return MouseRegion(
+      onEnter: (event) {
+        _scheduleDisable?.cancel();
+        if (!_opaque) {
+          setState(() {
+            _opaque = true;
+          });
+        }
+      },
+      onExit: (event) {
+        _scheduleDisableControlBar();
+      },
+
+      child: TapRegion(
+        onTapUpOutside: (event) {
+          _scheduleDisable?.cancel();
+          _scheduleHide?.cancel();
+          _scheduleDisable = Timer(const Duration(milliseconds: 500), () {
+            if (mounted && !_opaque) {
+              setState(() {
+                _opaque = true;
+              });
+            }
+          });
+          _scheduleHide = Timer(const Duration(milliseconds: 500), () {
+            if (mounted && _hidden) {
+              setState(() {
+                _hidden = false;
+              });
+            }
+          });
+        },
+        onTapOutside: (event) {
+          _scheduleDisableControlBar(const Duration(milliseconds: 100));
+          _scheduleHideControlBar(const Duration(milliseconds: 100));
+        },
+        child: AnimatedSlide(
+          offset: _hidden ? hideOffset : const Offset(0, 0),
+          duration: const Duration(milliseconds: 200),
+          child: Opacity(
+            opacity: _opaque ? 1 : 0.4,
+            child: Container(
+              width: isHorizontal ? double.infinity : 50,
+              height: isHorizontal ? 50 : double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Flex(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                direction: widget.controlBarDirection,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    tooltip: 'Reload',
+                    icon: const Icon(Icons.refresh),
+                    color: Colors.white,
+                    onPressed: () {
+                      widget.controller.reload();
+                    },
+                  ),
+
+                  divider,
+                  IconButton(
+                    padding: EdgeInsets.zero,
+
+                    tooltip: 'Recenter',
+                    icon: const Icon(Icons.center_focus_strong),
+                    color: Colors.white,
+                    onPressed: () {
+                      widget.controller.recenter(true);
+                    },
+                  ),
+                  divider,
+                  Flexible(
+                    child: ZoomControllerWidget(
+                      direction: widget.controlBarDirection,
+                      zoom: viewportController.zoom,
+                      onZoomChanged: (value, fromSlider, fromLongPress) {
+                        if (fromSlider) {
+                          viewportController.applyZoom(
+                            value,
+                            animationDuration: Duration.zero,
+                          );
+                        } else if (fromLongPress) {
+                          viewportController.applyZoom(
+                            value,
+                            unboundedProgressFactor: 0.2,
+                            animationDuration: Duration(milliseconds: 1500),
+                          );
+                        } else {
+                          viewportController.applyZoom(
+                            value,
+                            animationDuration: Duration(milliseconds: 200),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Offset _getHideOffset(
+    Alignment controlBarAlignment, [
+    double distance = 1.2,
+  ]) {
+    if (controlBarAlignment.y.abs() > controlBarAlignment.x.abs()) {
+      return Offset(0, distance * controlBarAlignment.y.sign);
+    } else {
+      return Offset(distance * controlBarAlignment.x.sign, 0);
     }
   }
 }

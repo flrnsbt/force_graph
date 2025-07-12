@@ -87,7 +87,7 @@ class ForceGraphController extends ChangeNotifier {
         currentCanvasSize.width / rect.width,
         currentCanvasSize.height / rect.height,
       );
-      viewportController.multiplyZoom(m, duration: Duration.zero);
+      viewportController.multiplyZoom(m, animationDuration: Duration.zero);
     }
   }
 
@@ -103,7 +103,7 @@ class ForceGraphController extends ChangeNotifier {
 
   Body get ground => _ground!;
 
-  void initWorld(SingleTickerProviderStateMixin state) {
+  void initWorld(TickerProvider state) {
     if (_ground == null) {
       final bodyDef = BodyDef()..type = BodyType.static;
       _ground = world.createBody(bodyDef);
@@ -472,13 +472,12 @@ class ViewportController {
     double scaleDelta, {
     Offset? focalPoint,
     double unboundedProgressFactor = 0.5,
-
-    Duration? duration = const Duration(milliseconds: 500),
+    Duration? animationDuration = const Duration(milliseconds: 500),
   }) {
-    applyZoom(
+    return applyZoom(
       zoom * scaleDelta,
       focalPoint: focalPoint,
-      duration: duration,
+      animationDuration: animationDuration,
       unboundedProgressFactor: unboundedProgressFactor,
     );
   }
@@ -487,28 +486,29 @@ class ViewportController {
     double zoom, {
     Offset? focalPoint,
     double unboundedProgressFactor = 0.5,
-    Duration? duration = const Duration(milliseconds: 500),
+    Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
   }) {
+    if (zoom < minZoom || zoom > maxZoom) return;
     focalPoint ??= screenCenter;
     final scale = zoom / this.zoom;
     final Offset newPanOffset = focalPoint - (focalPoint - panOffset) * scale;
-    if (duration == null || duration > Duration.zero) {
+    if (animationDuration == null || animationDuration > Duration.zero) {
       animateToPan(
         newPanOffset,
-        duration: duration,
+        animationDuration: animationDuration,
         curve: curve,
         unboundedProgressFactor: unboundedProgressFactor,
       );
       animateZoomTo(
         zoom,
-        duration: duration,
+        animationDuration: animationDuration,
         curve: curve,
         unboundedProgressFactor: unboundedProgressFactor,
       );
     } else {
       panOffset = newPanOffset;
-      this.zoom = zoom.clamp(minZoom, maxZoom);
+      this.zoom = zoom;
     }
   }
 
@@ -529,7 +529,7 @@ class ViewportController {
 
   Future<void> animateZoomTo(
     double zoom, {
-    Duration? duration = const Duration(milliseconds: 500),
+    Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
     double unboundedProgressFactor = 0.5,
   }) async {
@@ -538,7 +538,7 @@ class ViewportController {
     _zoomAnimateElement = AnimateElement.fromNum(
       zoom,
       this.zoom,
-      duration: duration,
+      duration: animationDuration,
       curve: curve,
       onUpdate: (newValue) {
         this.zoom = newValue;
@@ -555,7 +555,7 @@ class ViewportController {
 
   Future<void> animateToPan(
     Offset target, {
-    Duration? duration = const Duration(milliseconds: 500),
+    Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
     double unboundedProgressFactor = 0.5,
   }) async {
@@ -563,7 +563,7 @@ class ViewportController {
     _panAnimateElement = AnimateElement.fromVector2(
       target.toVector2(),
       panOffset.toVector2(),
-      duration: duration,
+      duration: animationDuration,
       curve: curve,
       unboundedProgressFactor: unboundedProgressFactor,
       onUpdate: (newValue) {
@@ -580,20 +580,20 @@ class ViewportController {
     double factor = .1,
     Duration? duration = const Duration(milliseconds: 100),
   }) {
-    multiplyZoom(1 + factor, duration: duration);
+    multiplyZoom(1 + factor, animationDuration: duration);
   }
 
   void zoomOut({
     double factor = .1,
     Duration? duration = const Duration(milliseconds: 100),
   }) {
-    multiplyZoom(1 - factor, duration: duration);
+    multiplyZoom(1 - factor, animationDuration: duration);
   }
 
   void moveBy(Offset offset, [Duration? animateDuration = Duration.zero]) {
     offset = offset + panOffset;
     if (animateDuration == null || animateDuration > Duration.zero) {
-      animateToPan(offset, duration: animateDuration);
+      animateToPan(offset, animationDuration: animateDuration);
     } else {
       panOffset = offset;
     }
