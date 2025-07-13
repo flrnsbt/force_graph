@@ -26,9 +26,9 @@ class TestPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mockGraphNodes = generateMockGraph(
-      maxEdgesPerNode: 3,
-      minEdgesPerNode: 2,
-      nodeCount: 50,
+      maxEdgesPerNode: 6,
+      minEdgesPerNode: 1,
+      nodeCount: 30,
     );
 
     return Scaffold(

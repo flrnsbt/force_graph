@@ -101,14 +101,15 @@ class ForceGraphController extends ChangeNotifier {
 
   Ticker get ticker => _ticker!;
 
-  Body get ground => _ground!;
-
-  void initWorld(TickerProvider state) {
+  Body get ground {
     if (_ground == null) {
       final bodyDef = BodyDef()..type = BodyType.static;
       _ground = world.createBody(bodyDef);
     }
+    return _ground!;
+  }
 
+  void initWorld(TickerProvider state) {
     _ticker = state.createTicker(_stepWorld);
     if (viewportController.hasSize) {
       _ticker!.start();
@@ -170,7 +171,7 @@ class ForceGraphController extends ChangeNotifier {
   //   } while (nbOfCollisions > 0);
   // }
 
-  Future<void> _init() async {
+  Future<void> _init({bool notifyReadyStatusChange = true}) async {
     try {
       _clear();
       _error = null;
@@ -179,7 +180,9 @@ class ForceGraphController extends ChangeNotifier {
       _loadingTotalStep = _graphBuilder.iterations;
       if (_isReady) {
         _isReady = false;
-        notifyListeners();
+        if (notifyReadyStatusChange) {
+          notifyListeners();
+        }
       }
       if (_rawData.isNotEmpty) {
         await _loadData(_rawData);
@@ -314,10 +317,13 @@ class ForceGraphController extends ChangeNotifier {
     world.clearForces();
   }
 
-  void loadDataFrom(List<ForceGraphNodeData> nodes) {
+  void loadDataFrom(
+    List<ForceGraphNodeData> nodes, {
+    bool notifyReadyStatusChange = true,
+  }) {
     _rawData.clear();
     _rawData.addAll(nodes);
-    _init();
+    _init(notifyReadyStatusChange: notifyReadyStatusChange);
   }
 
   final ForceDirectedGraphBuilder _graphBuilder;
@@ -400,11 +406,13 @@ class ViewportController {
     }
   }
 
+  final double initialZoom;
+
   ViewportController({
     this.zoom = 0.1,
     this.panOffset = Offset.zero,
     this.scale = 20.0,
-  });
+  }) : initialZoom = zoom;
 
   Size? _screenSize;
 
@@ -521,7 +529,7 @@ class ViewportController {
   }
 
   void reset() {
-    zoom = 1.0;
+    zoom = initialZoom;
     panOffset = Offset.zero;
   }
 

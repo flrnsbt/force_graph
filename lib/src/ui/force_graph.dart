@@ -6,7 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:force_graph/src/controller.dart';
-import 'package:force_graph/src/zoom_widget.dart';
+import 'package:force_graph/src/ui/control_bar.dart';
 import 'package:forge2d/forge2d.dart';
 
 class ForceGraphWidget extends StatefulWidget {
@@ -111,6 +111,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     final node = widget.controller.findBodyAt(worldPos);
     if (node != null) {
       node.onTap();
+    } else {
+      widget.controller.clearSelection();
     }
   }
 
@@ -366,12 +368,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   List<Widget> _buildOverlays() {
     final size = viewportController.screenSize;
     final bool moreHeightThanWidth = size.height > size.width;
+    final smallScreen = size.width < 600;
     final controlBarAlignment =
         widget.controlBarAlignment ??
         (moreHeightThanWidth ? Alignment.bottomCenter : Alignment.bottomRight);
     final direction =
         widget.controlBarDirection ??
         (moreHeightThanWidth ? Axis.horizontal : Axis.vertical);
+    final bool enableAutoHide = smallScreen;
     return [
       _buildTooltips(),
       if (widget.showControlBar)
@@ -386,7 +390,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
                     context,
                     widget.controller,
                   ) ??
-                  _ControlBar(
+                  ControlBar(
+                    enableAutoHide: enableAutoHide,
                     controller: widget.controller,
                     controlBarSpacing: widget.controlBarSpacing,
                     controlBarAlignment: controlBarAlignment,
@@ -475,192 +480,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     } else {
       _scheduleAutoMove?.cancel();
       widget.controller.stopNodesAutoMove();
-    }
-  }
-}
-
-class _ControlBar extends StatefulWidget {
-  const _ControlBar({
-    super.key,
-    required this.controller,
-    required this.controlBarAlignment,
-    required this.controlBarDirection,
-    required this.controlBarSpacing,
-  });
-  final ForceGraphController controller;
-  final Alignment controlBarAlignment;
-  final Axis controlBarDirection;
-  final EdgeInsets controlBarSpacing;
-
-  @override
-  State<_ControlBar> createState() => _ControlBarState();
-}
-
-class _ControlBarState extends State<_ControlBar> {
-  bool _opaque = true;
-
-  bool _hidden = false;
-
-  Timer? _scheduleDisable;
-  Timer? _scheduleHide;
-  @override
-  void dispose() {
-    _scheduleHide?.cancel();
-    _scheduleDisable?.cancel();
-    super.dispose();
-  }
-
-  void _scheduleDisableControlBar([
-    Duration duration = const Duration(seconds: 1),
-  ]) {
-    _scheduleDisable?.cancel();
-    _scheduleDisable = Timer(duration, () {
-      if (mounted && _opaque) {
-        setState(() {
-          _opaque = false;
-        });
-      }
-    });
-  }
-
-  void _scheduleHideControlBar([
-    Duration duration = const Duration(seconds: 1),
-  ]) {
-    _scheduleHide?.cancel();
-    _scheduleHide = Timer(duration, () {
-      if (mounted && !_hidden) {
-        setState(() {
-          _hidden = true;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final viewportController = widget.controller.viewportController;
-
-    final bool isHorizontal = widget.controlBarDirection == Axis.horizontal;
-    final divider = isHorizontal ? const VerticalDivider() : const Divider();
-    final hideOffset = _getHideOffset(widget.controlBarAlignment);
-    return MouseRegion(
-      onEnter: (event) {
-        _scheduleDisable?.cancel();
-        if (!_opaque) {
-          setState(() {
-            _opaque = true;
-          });
-        }
-      },
-      onExit: (event) {
-        _scheduleDisableControlBar();
-      },
-
-      child: TapRegion(
-        onTapUpOutside: (event) {
-          _scheduleDisable?.cancel();
-          _scheduleHide?.cancel();
-          _scheduleDisable = Timer(const Duration(milliseconds: 500), () {
-            if (mounted && !_opaque) {
-              setState(() {
-                _opaque = true;
-              });
-            }
-          });
-          _scheduleHide = Timer(const Duration(milliseconds: 500), () {
-            if (mounted && _hidden) {
-              setState(() {
-                _hidden = false;
-              });
-            }
-          });
-        },
-        onTapOutside: (event) {
-          _scheduleDisableControlBar(const Duration(milliseconds: 100));
-          _scheduleHideControlBar(const Duration(milliseconds: 100));
-        },
-        child: AnimatedSlide(
-          offset: _hidden ? hideOffset : const Offset(0, 0),
-          duration: const Duration(milliseconds: 200),
-          child: Opacity(
-            opacity: _opaque ? 1 : 0.4,
-            child: Container(
-              width: isHorizontal ? double.infinity : 50,
-              height: isHorizontal ? 50 : double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Flex(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                direction: widget.controlBarDirection,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    tooltip: 'Reload',
-                    icon: const Icon(Icons.refresh),
-                    color: Colors.white,
-                    onPressed: () {
-                      widget.controller.reload();
-                    },
-                  ),
-
-                  divider,
-                  IconButton(
-                    padding: EdgeInsets.zero,
-
-                    tooltip: 'Recenter',
-                    icon: const Icon(Icons.center_focus_strong),
-                    color: Colors.white,
-                    onPressed: () {
-                      widget.controller.recenter(true);
-                    },
-                  ),
-                  divider,
-                  Flexible(
-                    child: ZoomControllerWidget(
-                      direction: widget.controlBarDirection,
-                      zoom: viewportController.zoom,
-                      onZoomChanged: (value, fromSlider, fromLongPress) {
-                        if (fromSlider) {
-                          viewportController.applyZoom(
-                            value,
-                            animationDuration: Duration.zero,
-                          );
-                        } else if (fromLongPress) {
-                          viewportController.applyZoom(
-                            value,
-                            unboundedProgressFactor: 0.2,
-                            animationDuration: Duration(milliseconds: 1500),
-                          );
-                        } else {
-                          viewportController.applyZoom(
-                            value,
-                            animationDuration: Duration(milliseconds: 200),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Offset _getHideOffset(
-    Alignment controlBarAlignment, [
-    double distance = 1.2,
-  ]) {
-    if (controlBarAlignment.y.abs() > controlBarAlignment.x.abs()) {
-      return Offset(0, distance * controlBarAlignment.y.sign);
-    } else {
-      return Offset(distance * controlBarAlignment.x.sign, 0);
     }
   }
 }
