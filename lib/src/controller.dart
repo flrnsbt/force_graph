@@ -8,6 +8,8 @@ import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/graph_builder/graph_builder.dart';
 import 'package:forge2d/forge2d.dart';
 
+export 'package:force_graph/src/graph_builder/graph_builder.dart';
+
 class ForceGraphController extends ChangeNotifier {
   final ViewportController viewportController;
 
@@ -24,7 +26,7 @@ class ForceGraphController extends ChangeNotifier {
     this.enableNodesAutoMove = false, // experimental
     int maxSelection = 1,
     this.uniformEdgeWeight = false,
-    AlgorithmType algorithmType = AlgorithmType.mds,
+    AlgorithmType algorithmType = AlgorithmType.springEmbedder,
     int forceDirectedGraphLayoutIteration = 800,
     double forceDirectedGraphLayoutRepulse = 10,
     double forceDirectedGraphLayoutAttraction = 0.1,

@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:force_graph/src/graph_builder/isolate.dart';
+import 'package:force_graph/src/graph_builder/data.dart';
 
 import 'package:isolate_manager/isolate_manager.dart';
 
