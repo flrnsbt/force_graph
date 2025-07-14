@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
 
@@ -320,14 +321,14 @@ class ForceGraphController extends ChangeNotifier {
     world.clearForces();
   }
 
-  void loadDataFrom(
+  Future<void> loadDataFrom(
     List<ForceGraphNodeData> nodes, {
     bool notifyReadyStatusChange = true,
-  }) {
+  }) async {
     _rawData.clear();
     _rawData.addAll(nodes);
     if (viewportController.hasSize) {
-      _init(notifyReadyStatusChange: notifyReadyStatusChange);
+      await _init(notifyReadyStatusChange: notifyReadyStatusChange);
     }
   }
 
