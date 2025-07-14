@@ -281,23 +281,26 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     final bool hasError = error != null;
     final nodes = widget.controller.nodes;
     final joints = widget.controller.joints;
-    Widget child = CustomPaint(
-      painter: GraphPainter(
-        nodes,
-        joints,
-        (size) {
-          widget.controller.updateCanvasSize(size);
-        },
-        (canvas) {
-          final zoomScale = viewportController.scale * viewportController.zoom;
-          final matrix = Matrix4.identity()
-            ..translate(
-              viewportController.panOffset.dx,
-              viewportController.panOffset.dy,
-            )
-            ..scale(zoomScale, zoomScale);
-          canvas.transform(matrix.storage);
-        },
+    Widget child = ClipRect(
+      child: CustomPaint(
+        painter: GraphPainter(
+          nodes,
+          joints,
+          (size) {
+            widget.controller.updateCanvasSize(size);
+          },
+          (canvas) {
+            final zoomScale =
+                viewportController.scale * viewportController.zoom;
+            final matrix = Matrix4.identity()
+              ..translate(
+                viewportController.panOffset.dx,
+                viewportController.panOffset.dy,
+              )
+              ..scale(zoomScale, zoomScale);
+            canvas.transform(matrix.storage);
+          },
+        ),
       ),
     );
     if (isReady) {
