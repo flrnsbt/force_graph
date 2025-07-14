@@ -120,7 +120,6 @@ List<ForceGraphNodeData> generateMockGraph({
           target: targetId,
           similarity: similarity,
           weight: weight,
-          data: {'rel': 'mock'},
           style: GraphComponentStyle(
             color: Colors.black.withValues(alpha: 0.2),
           ),

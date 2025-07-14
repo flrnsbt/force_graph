@@ -42,26 +42,23 @@ class ForceGraphEdgeData {
   final String target;
   final double similarity;
   final double weight;
-  final Object? data;
   final GraphComponentStyle style;
   const ForceGraphEdgeData(
     this.source,
     this.target,
     this.similarity,
     this.weight,
-    this.data,
     this.style,
   );
 
   factory ForceGraphEdgeData.from({
     required String source,
     required String target,
-    Object? data,
     required double similarity,
     double weight = 1.0,
     GraphComponentStyle style = GraphComponentStyle.none,
   }) {
-    return ForceGraphEdgeData(source, target, similarity, weight, data, style);
+    return ForceGraphEdgeData(source, target, similarity, weight, style);
   }
 
   @override
@@ -73,27 +70,7 @@ class ForceGraphEdgeData {
   @override
   int get hashCode => iD;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'source': source,
-      'target': target,
-      'similarity': similarity,
-      'weight': weight,
-      'data': data,
-      'style': style.toJson(),
-    };
-  }
 
-  factory ForceGraphEdgeData.fromJson(Map<String, dynamic> json) {
-    return ForceGraphEdgeData(
-      json['source'],
-      json['target'],
-      json['similarity'],
-      json['weight'],
-      json['data'],
-      GraphComponentStyle.fromJson(json['style']),
-    );
-  }
 }
 
 class GraphComponentStyle {
