@@ -329,7 +329,22 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             onPointerSignal: (event) {
               _scheduleAutoMove?.cancel();
               if (event is PointerScrollEvent) {
-                viewportController.addPan(event.scrollDelta);
+                if (HardwareKeyboard.instance.isControlPressed) {
+                  final dy = event.scrollDelta.dy;
+                  if (dy > 0) {
+                    viewportController.zoomOut(
+                      focalPoint: event.localPosition,
+                      animationDuration: Duration.zero,
+                    );
+                  } else {
+                    viewportController.zoomIn(
+                      focalPoint: event.localPosition,
+                      animationDuration: Duration.zero,
+                    );
+                  }
+                } else {
+                  viewportController.addPan(-event.scrollDelta);
+                }
               }
               _updateAutoMoveStatus();
             },

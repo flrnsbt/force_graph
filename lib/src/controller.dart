@@ -504,7 +504,8 @@ class ViewportController {
     Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
   }) {
-    if (zoom < minZoom || zoom > maxZoom) return;
+    zoom = zoom.clamp(minZoom, maxZoom);
+    if (zoom == this.zoom) return;
     focalPoint ??= screenCenter;
     final scale = zoom / this.zoom;
     final Offset newPanOffset = focalPoint - (focalPoint - panOffset) * scale;
@@ -593,16 +594,28 @@ class ViewportController {
 
   void zoomIn({
     double factor = .1,
-    Duration? duration = const Duration(milliseconds: 100),
+    Offset? focalPoint,
+
+    Duration? animationDuration = const Duration(milliseconds: 100),
   }) {
-    multiplyZoom(1 + factor, animationDuration: duration);
+    multiplyZoom(
+      1 + factor,
+      focalPoint: focalPoint,
+      animationDuration: animationDuration,
+    );
   }
 
   void zoomOut({
     double factor = .1,
-    Duration? duration = const Duration(milliseconds: 100),
+    Offset? focalPoint,
+
+    Duration? animationDuration = const Duration(milliseconds: 100),
   }) {
-    multiplyZoom(1 - factor, animationDuration: duration);
+    multiplyZoom(
+      1 - factor,
+      focalPoint: focalPoint,
+      animationDuration: animationDuration,
+    );
   }
 
   void moveBy(Offset offset, [Duration? animateDuration = Duration.zero]) {
