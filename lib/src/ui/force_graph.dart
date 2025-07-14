@@ -344,6 +344,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       );
     }
 
+    final bool isLoading = widget.controller.isLoading;
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -352,7 +354,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
           ..._buildOverlays()
         else if (hasError)
           Positioned.fill(child: widget.errorBuilder(context, error))
-        else if (widget.loadingBuilder != null)
+        else if (isLoading && widget.loadingBuilder != null)
           Positioned.fill(
             child: widget.loadingBuilder!(
               context,

@@ -62,10 +62,6 @@ class ForceGraphController extends ChangeNotifier {
 
   int maxSelected = 1;
 
-  // final _collidingNodes = <String>{};
-
-  // int get nbOfCollisions => _collidingNodes.length;
-
   void recenter([bool adjustZoom = true]) {
     double minX = double.maxFinite;
     double minY = double.maxFinite;
@@ -130,6 +126,9 @@ class ForceGraphController extends ChangeNotifier {
 
   bool get isReady => _isReady;
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
   void _isReadyCallback() {
     recenter();
   }
@@ -163,22 +162,6 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  // void _ensureNoCollision() {
-  //   final s = DateTime.now();
-  //   Duration lastDuration = Duration.zero;
-  //   do {
-  //     final d = DateTime.now().difference(s);
-  //     final dt = d - lastDuration;
-  //     print('Collisions: $nbOfCollisions');
-
-  //     if (dt.inMilliseconds < 16) {
-  //       continue;
-  //     }
-  //     lastDuration = d;
-  //     _stepWorld(d);
-  //   } while (nbOfCollisions > 0);
-  // }
-
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
     try {
       _clear();
@@ -186,13 +169,13 @@ class ForceGraphController extends ChangeNotifier {
       _ticker?.stop();
       _loadingProgressStep = 0;
       _loadingTotalStep = _graphBuilder.iterations;
-      if (_isReady) {
+     
+      if (_rawData.isNotEmpty) {
         _isReady = false;
+        _isLoading = true;
         if (notifyReadyStatusChange) {
           notifyListeners();
         }
-      }
-      if (_rawData.isNotEmpty) {
         await _loadData(_rawData);
         _isReady = true;
         _isReadyCallback();
@@ -200,6 +183,9 @@ class ForceGraphController extends ChangeNotifier {
       }
     } catch (e) {
       _error = e;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

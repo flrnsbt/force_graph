@@ -1,6 +1,6 @@
 name: force_graph
 description: "Forge2D based force graph"
-version: 0.0.6
+version: 0.0.7
 homepage: https://github.com/flrnsbt/force_graph
 
 environment:
