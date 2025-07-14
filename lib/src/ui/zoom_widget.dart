@@ -85,6 +85,7 @@ class ZoomControllerWidget extends StatelessWidget {
       children = children.reversed.toList();
     }
     return Flex(
+      spacing: 6,
       direction: direction,
       mainAxisSize: MainAxisSize.min,
       children: children,
