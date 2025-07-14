@@ -162,9 +162,12 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void selectNode(String nodeID) {
+  void selectNode(String nodeID, {bool animateToCenter = true}) {
     final node = _nodes.firstWhere((n) => n.iD == nodeID);
     node.selected = true;
+    if (animateToCenter) {
+      node._animateCenter();
+    }
   }
 
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
@@ -174,7 +177,7 @@ class ForceGraphController extends ChangeNotifier {
       _ticker?.stop();
       _loadingProgressStep = 0;
       _loadingTotalStep = _graphBuilder.iterations;
-     
+
       if (_rawData.isNotEmpty) {
         _isReady = false;
         _isLoading = true;
@@ -306,6 +309,7 @@ class ForceGraphController extends ChangeNotifier {
     }
     _joints.clear();
     _nodes.clear();
+    _onSelectionChanged();
   }
 
   @override
@@ -330,8 +334,6 @@ class ForceGraphController extends ChangeNotifier {
   final ForceDirectedGraphBuilder _graphBuilder;
 
   Future<void> _loadData(List<ForceGraphNodeData> nodes) async {
-    if (!viewportController.hasSize) return;
-    _clear();
     final worldSize = viewportController.worldSize;
     final layout = _graphBuilder;
     await layout.performLayout(nodes, worldSize, (progress) {
@@ -354,15 +356,15 @@ class ForceGraphController extends ChangeNotifier {
     for (final edge in layout.edges) {
       try {
         final (nodeA, nodeB) = _getBodyPair(edge);
-      final jointDef = DistanceJointDef()
-        ..initialize(nodeA, nodeB, nodeA.position, nodeB.position)
-        ..frequencyHz = 2
-        ..dampingRatio = 0.7;
+        final jointDef = DistanceJointDef()
+          ..initialize(nodeA, nodeB, nodeA.position, nodeB.position)
+          ..frequencyHz = 2
+          ..dampingRatio = 0.7;
 
-      jointDef.userData = edge;
-      final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
-      _joints.add(e);
-      world.createJoint(e.joint);
+        jointDef.userData = edge;
+        final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
+        _joints.add(e);
+        world.createJoint(e.joint);
       } catch (e) {
         print('Error creating joint for edge $edge: $e');
       }
