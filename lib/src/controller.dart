@@ -322,7 +322,9 @@ class ForceGraphController extends ChangeNotifier {
   }) {
     _rawData.clear();
     _rawData.addAll(nodes);
-    _init(notifyReadyStatusChange: notifyReadyStatusChange);
+    if (viewportController.hasSize) {
+      _init(notifyReadyStatusChange: notifyReadyStatusChange);
+    }
   }
 
   final ForceDirectedGraphBuilder _graphBuilder;
