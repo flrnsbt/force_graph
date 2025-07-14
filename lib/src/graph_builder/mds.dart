@@ -33,7 +33,7 @@ void performMDSLayoutIsolate(dynamic input) {
         }
       }
 
-      double minimumSpacing = double.maxFinite;
+      double minimumSpacing = double.infinity;
 
       double similarityToDistance(num similarity) {
         const minDist = 0.5;
@@ -344,8 +344,10 @@ Map<String, Point> _refineWithForces(
       final targetID = edge.target;
 
       if (positions.containsKey(sourceID) && positions.containsKey(targetID)) {
-        final source = positions[sourceID]!;
-        final target = positions[targetID]!;
+        final source = positions[sourceID];
+        final target = positions[targetID];
+
+        if (source == null || target == null) continue;
 
         var dx = source.x - target.x;
         var dy = source.y - target.y;

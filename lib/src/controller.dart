@@ -352,7 +352,8 @@ class ForceGraphController extends ChangeNotifier {
     }
 
     for (final edge in layout.edges) {
-      final (nodeA, nodeB) = _getBodyPair(edge);
+      try {
+        final (nodeA, nodeB) = _getBodyPair(edge);
       final jointDef = DistanceJointDef()
         ..initialize(nodeA, nodeB, nodeA.position, nodeB.position)
         ..frequencyHz = 2
@@ -362,6 +363,9 @@ class ForceGraphController extends ChangeNotifier {
       final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
       _joints.add(e);
       world.createJoint(e.joint);
+      } catch (e) {
+        print('Error creating joint for edge $edge: $e');
+      }
     }
   }
 

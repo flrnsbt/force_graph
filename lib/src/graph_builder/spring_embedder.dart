@@ -33,7 +33,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         }
       }
 
-      double minimumSpacing = double.maxFinite;
+      double minimumSpacing = double.infinity;
       double similarityToDistance(num similarity) {
         const minDist = 0.5;
         final maxDist = 25;
@@ -71,8 +71,9 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         for (final edge in edges) {
           final sourceID = edge.source;
           final targetID = edge.target;
-          final source = positions[sourceID]!;
-          final target = positions[targetID]!;
+          final source = positions[sourceID];
+          final target = positions[targetID];
+          if (source == null || target == null) continue;
 
           var dx = source.x - target.x;
           var dy = source.y - target.y;

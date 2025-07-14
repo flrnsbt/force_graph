@@ -81,7 +81,10 @@ class ForceDirectedGraphBuilder {
         _positions[iD] = Vector2(value['x'], value['y']);
       }
 
-      minimumSpacing = result['minimumSpacing'] as double;
+      final minimumSpacing = result['minimumSpacing'] as double;
+      if (minimumSpacing.isFinite) {
+        this.minimumSpacing = minimumSpacing;
+      }
     } catch (e) {
       print('error: $e');
       rethrow;
@@ -98,7 +101,7 @@ class ForceDirectedGraphBuilder {
     return UnmodifiableMapView(result);
   }
 
-  double minimumSpacing = double.maxFinite;
+  double minimumSpacing = 5;
 }
 
 enum AlgorithmType {

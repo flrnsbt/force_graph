@@ -25,11 +25,41 @@ class TestPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mockGraphNodes = generateMockGraph(
-      maxEdgesPerNode: 6,
-      minEdgesPerNode: 1,
-      nodeCount: 30,
-    );
+    // final mockGraphNodes = generateMockGraph(
+    //   maxEdgesPerNode: 6,
+    //   minEdgesPerNode: 1,
+    //   nodeCount: 30,
+    // );
+
+    final mockGraphNodes = [
+      ForceGraphNodeData.from(
+        id: 'doc1',
+        title: 'Document 1',
+        style: GraphComponentStyle(color: Colors.blue),
+        edges: [
+          ForceGraphEdgeData.from(
+            source: 'doc1',
+            target: 'doc12',
+            similarity: 1,
+            weight: 1,
+          ),
+        ],
+      ),
+      ForceGraphNodeData.from(
+        id: 'doc2',
+        title: 'Document 2',
+        edges: [
+          ForceGraphEdgeData.from(
+            source: 'doc2',
+            target: 'doc13',
+            similarity: 1,
+            weight: 1,
+          ),
+        ],
+      ),
+      // ForceGraphNodeData.from(id: 'doc12', title: 'Document 12'),
+      // ForceGraphNodeData.from(id: 'doc13', title: 'Document 13'),
+    ];
 
     return Scaffold(
       body: ForceGraphWidget(
