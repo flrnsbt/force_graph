@@ -8,15 +8,23 @@ class ForceGraphNodeData {
   final List<ForceGraphEdgeData> edges;
   final GraphComponentStyle style;
   final String title;
-  const ForceGraphNodeData(this.id, this.edges, this.style, this.title);
+  final Object? data;
+  const ForceGraphNodeData(
+    this.id,
+    this.edges,
+    this.style,
+    this.title,
+    this.data,
+  );
 
   factory ForceGraphNodeData.from({
     required String id,
     List<ForceGraphEdgeData> edges = const [],
     GraphComponentStyle style = GraphComponentStyle.none,
     String title = '',
+    Object? data,
   }) {
-    return ForceGraphNodeData(id, edges, style, title);
+    return ForceGraphNodeData(id, edges, style, title, data);
   }
 
   @override
@@ -26,23 +34,7 @@ class ForceGraphNodeData {
   @override
   int get hashCode => id.hashCode;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'edges': [for (final edge in edges) edge.toJson()],
-      'style': style.toJson(),
-      'title': title,
-    };
-  }
-
-  factory ForceGraphNodeData.fromJson(Map<String, dynamic> json) {
-    return ForceGraphNodeData(
-      json['id'],
-      [for (final edge in json['edges']) ForceGraphEdgeData.fromJson(edge)],
-      GraphComponentStyle.fromJson(json['style']),
-      json['title'],
-    );
-  }
+ 
 }
 
 class ForceGraphEdgeData {
