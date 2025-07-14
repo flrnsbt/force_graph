@@ -162,6 +162,11 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void selectNode(String nodeID) {
+    final node = _nodes.firstWhere((n) => n.iD == nodeID);
+    node.selected = true;
+  }
+
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
     try {
       _clear();
