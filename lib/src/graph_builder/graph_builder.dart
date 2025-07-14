@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:force_graph/src/graph_builder/isolate.dart';
+import 'package:force_graph/src/graph_builder/mds.dart';
+import 'package:force_graph/src/graph_builder/spring_embedder.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 
 import 'package:flutter/material.dart';
@@ -16,10 +17,13 @@ class ForceDirectedGraphBuilder {
   double repulsion;
   double attraction;
 
+  AlgorithmType algorithmType;
+
   ForceDirectedGraphBuilder({
     required this.iterations,
     required this.repulsion,
     required this.attraction,
+    this.algorithmType = AlgorithmType.springEmbedder,
   });
 
   Future<void> performLayout(
@@ -31,17 +35,7 @@ class ForceDirectedGraphBuilder {
     edges.clear();
     _nodes.clear();
     _nodes.addAll(nodes);
-    final isolate = IsolateManager.createCustom(
-      performLayoutIsolate,
-      isDebug: kDebugMode,
-      converter: (value) {
-        if (value is ImType) {
-          return value.unwrap;
-        }
-        return value;
-      },
-      workerName: 'assets/packages/force_graph/web/performLayoutIsolate',
-    );
+    final isolate = algorithmType.createIsolate();
     try {
       final nodesJSON = <Map>[];
       for (final node in nodes) {
@@ -105,4 +99,33 @@ class ForceDirectedGraphBuilder {
   }
 
   double minimumSpacing = double.maxFinite;
+}
+
+enum AlgorithmType {
+  springEmbedder('performSpringEmbedderLayoutIsolate'),
+  mds('performMDSLayoutIsolate');
+
+  final String functionName;
+
+  const AlgorithmType(this.functionName);
+
+  IsolateManager createIsolate() {
+    FutureOr<void> Function(dynamic) function;
+    if (this == springEmbedder) {
+      function = performSpringEmbedderLayoutIsolate;
+    } else {
+      function = performMDSLayoutIsolate;
+    }
+    return IsolateManager.createCustom(
+      function,
+      isDebug: kDebugMode,
+      converter: (value) {
+        if (value is ImType) {
+          return value.unwrap;
+        }
+        return value;
+      },
+      workerName: 'assets/packages/force_graph/web/$functionName',
+    );
+  }
 }

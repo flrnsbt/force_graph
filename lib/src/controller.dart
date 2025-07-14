@@ -24,6 +24,7 @@ class ForceGraphController extends ChangeNotifier {
     this.enableNodesAutoMove = false, // experimental
     int maxSelection = 1,
     this.uniformEdgeWeight = false,
+    AlgorithmType algorithmType = AlgorithmType.mds,
     int forceDirectedGraphLayoutIteration = 800,
     double forceDirectedGraphLayoutRepulse = 10,
     double forceDirectedGraphLayoutAttraction = 0.1,
@@ -35,6 +36,7 @@ class ForceGraphController extends ChangeNotifier {
        _graphBuilder = ForceDirectedGraphBuilder(
          iterations: forceDirectedGraphLayoutIteration,
          repulsion: forceDirectedGraphLayoutRepulse,
+         algorithmType: algorithmType,
          attraction: forceDirectedGraphLayoutAttraction,
        ) {
     world.destroyListener = _DestroyListener(this);
@@ -50,6 +52,10 @@ class ForceGraphController extends ChangeNotifier {
 
   void updateForceDirectedGraphLayoutAttraction(double value) {
     _graphBuilder.attraction = value;
+  }
+
+  void updateAlgorithmType(AlgorithmType algorithmType) {
+    _graphBuilder.algorithmType = algorithmType;
   }
 
   int maxSelected = 1;
