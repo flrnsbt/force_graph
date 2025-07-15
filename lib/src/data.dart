@@ -67,11 +67,14 @@ class ForceGraphEdgeData {
     return ForceGraphEdgeData(source, target, similarity, weight, style);
   }
 
+  static int getID(String source, String target) =>
+      source.hashCode ^ target.hashCode;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || other is ForceGraphEdgeData && iD == other.iD;
 
-  int get iD => source.hashCode ^ target.hashCode;
+  int get iD => getID(source, target);
 
   @override
   int get hashCode => iD;

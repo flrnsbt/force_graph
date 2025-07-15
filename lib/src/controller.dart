@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
@@ -34,6 +36,9 @@ class ForceGraphController extends ChangeNotifier {
     double forceDirectedGraphLayoutRepulse = 10,
     double forceDirectedGraphLayoutAttraction = 0.1,
     this.enableAutoCenterOnNodeSelection = true,
+    this.edgeHightlightColor,
+    this.edgeHiddenOpacity,
+    this.nodeHiddenOpacity,
     double scale = 25,
     double initialZoom = ViewportController.minZoom,
   }) : maxSelected = maxSelection,
@@ -119,6 +124,18 @@ class ForceGraphController extends ChangeNotifier {
 
   void initWorld(TickerProvider state) {
     _ticker = state.createTicker(_stepWorld);
+    if (isReady) {
+      _startTicker();
+    }
+  }
+
+  void _startTicker() {
+    if (_ticker == null) {
+      return;
+    }
+    if (!_ticker!.isActive) {
+      _ticker!.start();
+    }
   }
 
   int _elapsedMs = 0;
@@ -171,6 +188,57 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  String? $_hoveredNodeID;
+
+  ForceGraphNode? get hoveredNode => _nodes[$_hoveredNodeID];
+
+  bool get isHovering => $_hoveredNodeID != null || $_hoveredEdgeID != null;
+
+  bool get isPhysicallyHovering => isHovering && !_programaticalHover;
+
+  bool _programaticalHover = false;
+
+  void hoverNode(
+    String? nodeID, {
+    bool animateToCenter = false,
+    bool programatical = true,
+  }) {
+    if (nodeID != $_hoveredNodeID) {
+      if ($_hoveredNodeID != null) {
+        final node = _nodes[$_hoveredNodeID]!;
+        node.hovered = false;
+      }
+      if (nodeID != null) {
+        final node = _nodes[nodeID]!;
+        node.hovered = true;
+        if (animateToCenter) {
+          node._animateCenter();
+        }
+      }
+      _programaticalHover = programatical;
+      $_hoveredNodeID = nodeID;
+    }
+  }
+
+  int? $_hoveredEdgeID;
+
+  ForceGraphEdge? get hoveredEdge => _joints[$_hoveredEdgeID];
+
+  void hoverEdge(int? edgeID, {bool programatical = true}) {
+    if (edgeID != $_hoveredEdgeID) {
+      if ($_hoveredEdgeID != null) {
+        final edge = _joints[$_hoveredEdgeID]!;
+        edge.hovered = false;
+      }
+      if (edgeID != null) {
+        final edge = _joints[edgeID]!;
+        edge.hovered = true;
+      }
+      _programaticalHover = programatical;
+      $_hoveredEdgeID = edgeID;
+    }
+  }
+
   void focusNode(String nodeID) {
     final node = _nodes[nodeID]!;
     node._animateCenter();
@@ -180,7 +248,7 @@ class ForceGraphController extends ChangeNotifier {
     try {
       _clear();
       _error = null;
-      _ticker!.stop();
+      _ticker?.stop();
       _loadingProgressStep = 0;
       _loadingTotalStep = _graphBuilder.iterations;
 
@@ -193,7 +261,7 @@ class ForceGraphController extends ChangeNotifier {
         await _loadData(_rawData);
         _isReady = true;
         _isReadyCallback();
-        _ticker!.start();
+        _startTicker();
       }
       if (_completer != null && _completer!.isCompleted == false) {
         _completer!.complete();
@@ -276,13 +344,13 @@ class ForceGraphController extends ChangeNotifier {
   final World world = World(Vector2.zero());
 
   final Map<String, ForceGraphNode> _nodes = {};
-  final List<ForceGraphEdge> _joints = [];
+  final Map<int, ForceGraphEdge> _joints = {};
 
   UnmodifiableListView<ForceGraphNode> get nodes =>
       UnmodifiableListView(_nodes.values);
 
   UnmodifiableListView<ForceGraphEdge> get joints =>
-      UnmodifiableListView(_joints);
+      UnmodifiableListView(_joints.values);
 
   void clearSelection() {
     for (final node in _nodes.values) {
@@ -350,6 +418,12 @@ class ForceGraphController extends ChangeNotifier {
 
   final ForceDirectedGraphBuilder _graphBuilder;
 
+  double? nodeHiddenOpacity;
+
+  double? edgeHiddenOpacity;
+
+  Color? edgeHightlightColor;
+
   Future<void> _loadData(List<ForceGraphNodeData> nodes) async {
     final worldSize = viewportController.worldSize;
     await _graphBuilder.performLayout(nodes, worldSize, (progress) {
@@ -379,7 +453,7 @@ class ForceGraphController extends ChangeNotifier {
 
         jointDef.userData = edge;
         final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
-        _joints.add(e);
+        _joints[e.data.iD] = e;
         world.createJoint(e.joint);
       } catch (e) {
         debugPrint('Error creating joint for edge $edge: $e');
@@ -664,9 +738,9 @@ class ForceGraphEdge {
   bool hovered = false;
 
   bool _highlight = false;
-  bool _disable = false;
+  bool _hide = false;
   bool get highlight => _highlight;
-  bool get disable => _disable;
+  bool get hide => _hide;
 
   ForceGraphEdge(this.joint, this.data, this._controller);
 
@@ -684,11 +758,13 @@ class ForceGraphEdge {
 
     weight /= _controller.viewportController.scale / 2;
 
-    if (disable) {
-      paint.color = paint.color.withValues(alpha: 0.05);
+    if (hide) {
+      paint.color = paint.color.withValues(
+        alpha: _controller.edgeHiddenOpacity ?? 0.05,
+      );
     } else {
       if (highlight) {
-        paint.color = Colors.purpleAccent;
+        paint.color = _controller.edgeHightlightColor ?? Colors.purpleAccent;
         weight *= 1.4;
       } else if (hovered) {
         paint.color = Colors.red;
@@ -792,36 +868,37 @@ class ForceGraphNode {
             node._selected = false;
           }
 
-          node.disable = true;
+          node.hide = true;
         }
 
-        for (final edge in _controller._joints) {
+        for (final edge in _controller._joints.values) {
           final bool isTarget = edge.data.target == iD;
           final bool isSource = edge.data.source == iD;
+          final opacity = _controller.nodeHiddenOpacity ?? 0.8;
           if (isTarget || isSource) {
             edge._highlight = true;
-            edge._disable = false;
+            edge._hide = false;
             if (isTarget) {
-              _controller._nodes[edge.data.source]!._opacity = 0.8;
+              _controller._nodes[edge.data.source]!._opacity = opacity;
             }
             if (isSource) {
-              _controller._nodes[edge.data.target]!._opacity = 0.8;
+              _controller._nodes[edge.data.target]!._opacity = opacity;
             }
           } else {
-            edge._disable = true;
+            edge._hide = true;
             edge._highlight = false;
           }
         }
-        disable = false;
+        hide = false;
         _opacity = 1;
       } else {
         for (final edge in _controller.joints) {
           edge._highlight = false;
-          edge._disable = false;
+          edge._hide = false;
         }
         for (final node in _controller.nodes) {
           node._opacity = 1;
-          node.disable = false;
+          node.hide = false;
         }
       }
       _selected = value;
@@ -916,12 +993,12 @@ class ForceGraphNode {
 
   double _opacity = 1;
 
-  bool _disable = false;
+  bool _hidden = false;
 
-  set disable(bool value) {
-    if (_disable != value) {
-      _disable = value;
-      if (_disable) {
+  set hide(bool value) {
+    if (_hidden != value) {
+      _hidden = value;
+      if (_hidden) {
         body.setMassData(MassData()..mass = 0);
         _opacity = 0.1;
       } else {
@@ -965,7 +1042,10 @@ class _DestroyListener implements DestroyListener {
 
   @override
   void onDestroyJoint(Joint joint) {
-    controller._joints.removeWhere((n) => identical(n.joint, joint));
+    final bodyAID = (joint.bodyA.userData as ForceGraphNodeData).id;
+    final bodyBID = (joint.bodyB.userData as ForceGraphNodeData).id;
+    final iD = ForceGraphEdgeData.getID(bodyAID, bodyBID);
+    controller._joints.remove(iD);
   }
 }
 

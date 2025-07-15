@@ -205,8 +205,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
   }
 
-  ForceGraphNode? _hoveredNode;
-  ForceGraphEdge? _hoveredJoint;
 
   Offset? _hoverPos;
 
@@ -216,24 +214,10 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     _hoverPos = position;
     final worldPos = _screenToWorld(position);
     final node = widget.controller.findBodyAt(worldPos);
-    if (_hoveredNode != null && node != _hoveredNode) {
-      _hoveredNode!.hovered = false;
-      _hoveredNode = null;
-    }
-    if (node != null) {
-      node.hovered = true;
-      _hoveredNode = node;
-    }
+    widget.controller.hoverNode(node?.iD, programatical: false);
 
     final joint = widget.controller.findJointAt(worldPos);
-    if (_hoveredJoint != null && joint != _hoveredJoint) {
-      _hoveredJoint!.hovered = false;
-      _hoveredJoint = null;
-    }
-    if (joint != null) {
-      joint.hovered = true;
-      _hoveredJoint = joint;
-    }
+    widget.controller.hoverEdge(joint?.data.iD, programatical: false);
     _updateAutoMoveStatus();
   }
 
@@ -241,7 +225,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     if (isDraggingNode) {
       return SystemMouseCursors.grabbing;
     }
-    if (_hoveredNode != null) {
+    if (widget.controller.isPhysicallyHovering) {
       return SystemMouseCursors.grab;
     }
     return SystemMouseCursors.basic;
@@ -447,7 +431,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   Widget _buildTooltips() {
-    final edge = _hoveredJoint;
+    final edge = widget.controller.hoveredEdge;
     if (edge != null && widget.edgeTooltipBuilder != null) {
       // final positionBodyA = viewportController.worldToScreen(
       //   edge.joint.anchorA,
@@ -472,7 +456,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         ),
       );
     }
-    final node = _hoveredNode;
+    final node = widget.controller.hoveredNode;
     if (node != null && widget.nodeTooltipBuilder != null) {
       Offset position = viewportController.worldToScreen(node.position);
       if (widget.offsetUpdater != null) {
@@ -495,8 +479,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       return;
     }
     final canAutoMove =
-        _hoveredJoint == null &&
-        _hoveredNode == null &&
+        widget.controller.isHovering &&
         !isDraggingNode &&
         !isPanning;
     if (canAutoMove) {
