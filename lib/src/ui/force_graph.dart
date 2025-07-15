@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:force_graph/src/controller.dart';
+import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/ui/control_bar.dart';
 import 'package:force_graph/src/ui/tooltip.dart';
 import 'package:forge2d/forge2d.dart';
@@ -26,9 +27,11 @@ class ForceGraphWidget extends StatefulWidget {
     this.customControlBarBuilder,
     this.focusNode,
     this.onSelectionChanged,
+    this.selectionOverlayColor,
     Widget Function(BuildContext context, Object error)? errorBuilder,
     this.loadingBuilder = _kDefaultLoadingBuilder,
   }) : errorBuilder = errorBuilder ?? _kDefaultErrorBuilder;
+  final Color? selectionOverlayColor;
   final ForceGraphController controller;
   final Axis? controlBarDirection;
   final bool showControlBar;
@@ -112,7 +115,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   void _tapUp(Offset screenPos) {
-    _scheduleAutoMove?.cancel();
     final worldPos = _screenToWorld(screenPos);
     final node = widget.controller.findBodyAt(worldPos);
     if (node != null) {
@@ -122,108 +124,24 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
   }
 
-  bool isDraggingNode = false;
-  bool get isPanning => _controlKeyPressed;
-  bool get _controlKeyPressed => HardwareKeyboard.instance.isControlPressed;
-  Body? draggedBody;
-  MouseJoint? mouseJoint;
 
-  void onScaleStart(ScaleStartDetails details) {
-    _scheduleAutoMove?.cancel();
 
-    final worldTouch = viewportController.screenToWorld(details.focalPoint);
-    final node = widget.controller.findBodyAt(worldTouch);
+ 
 
-    if (node != null) {
-      startDragging(node.body, worldTouch);
-    }
-    _updateAutoMoveStatus();
-  }
+ 
 
-  void onScaleUpdate(ScaleUpdateDetails details) {
-    _scheduleAutoMove?.cancel();
 
-    final scale = details.scale;
 
-    if (scale != 1.0) {
-      double dt = scale - 1;
-      if (dt.isNegative) {
-        dt /= 20;
-      } else {
-        dt /= 40;
-      }
-      final zoomScale = 1 + dt;
-      viewportController.multiplyZoom(
-        zoomScale,
-        focalPoint: details.focalPoint,
-        animationDuration: Duration.zero,
-      );
-    } else {
-      if (isPanning) {
-        isDraggingNode = false;
-        viewportController.addPan(details.focalPointDelta);
-      } else if (mouseJoint != null) {
-        isDraggingNode = true;
-        final worldTarget = viewportController.screenToWorld(
-          details.focalPoint,
-        );
-        mouseJoint?.setTarget(worldTarget);
-      }
-    }
-  }
-
-  void onScaleEnd(ScaleEndDetails details) {
-    _scheduleAutoMove?.cancel();
-
-    if (isDraggingNode) {
-      stopDragging();
-    }
-    isDraggingNode = false;
-    _updateAutoMoveStatus();
-  }
-
-  void startDragging(Body body, Vector2 targetWorld) {
-    stopDragging();
-    final mouseJointDef = MouseJointDef()
-      ..bodyA = ground
-      ..bodyB = body
-      ..target.setFrom(targetWorld)
-      ..maxForce = body.mass * 60
-      ..dampingRatio = 1;
-    mouseJoint = MouseJoint(mouseJointDef);
-    world.createJoint(mouseJoint!);
-
-    draggedBody = body;
-  }
-
-  void stopDragging() {
-    if (mouseJoint != null) {
-      world.destroyJoint(mouseJoint!);
-      mouseJoint = null;
-      draggedBody = null;
-    }
-  }
-
-  Offset? _hoverPos;
-
-  void _updateHover(Offset position) {
-    _scheduleAutoMove?.cancel();
-
-    _hoverPos = position;
-    final worldPos = _screenToWorld(position);
-    final node = widget.controller.findBodyAt(worldPos);
-    widget.controller.hoverNode(node?.iD, programatical: false);
-
-    final joint = widget.controller.findJointAt(worldPos);
-    widget.controller.hoverEdge(joint?.data.iD, programatical: false);
-    _updateAutoMoveStatus();
-  }
+ 
 
   MouseCursor getCursor() {
-    if (isPanning) {
+    if (widget.controller.isSelecting) {
+      return SystemMouseCursors.click;
+    }
+    if (widget.controller.isPanning) {
       return SystemMouseCursors.move;
     }
-    if (isDraggingNode) {
+    if (widget.controller.isDraggingNode) {
       return SystemMouseCursors.grabbing;
     }
     if (widget.controller.isPhysicallyHovering) {
@@ -232,38 +150,11 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     return SystemMouseCursors.basic;
   }
 
-  static bool get _isMac => defaultTargetPlatform == TargetPlatform.macOS;
 
-  void _onKeyEvent(KeyEvent event) {
-    final ctrlPressed = _isMac
-        ? HardwareKeyboard.instance.isMetaPressed
-        : _controlKeyPressed;
-    const factor = 10.0;
-    switch (event.physicalKey) {
-      case PhysicalKeyboardKey.arrowUp:
-        if (ctrlPressed) {
-          viewportController.zoomIn();
-        } else {
-          viewportController.moveBy(Offset(0, factor));
-        }
-        break;
-      case PhysicalKeyboardKey.arrowDown:
-        if (ctrlPressed) {
-          viewportController.zoomOut();
-        } else {
-          viewportController.moveBy(Offset(0, -factor));
-        }
-        break;
-      case PhysicalKeyboardKey.arrowLeft:
-        viewportController.moveBy(Offset(factor, 0));
-        break;
-      case PhysicalKeyboardKey.arrowRight:
-        viewportController.moveBy(Offset(-factor, 0));
-        break;
-    }
-  }
+  
 
-  Timer? _scheduleAutoMove;
+
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +182,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
               ..scale(zoomScale, zoomScale);
             canvas.transform(matrix.storage);
           },
+          widget.controller.selectionRect,
+          widget.selectionOverlayColor
         ),
       ),
     );
@@ -298,11 +191,11 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       child = KeyboardListener(
         focusNode: _focusNode,
         autofocus: true,
-        onKeyEvent: _onKeyEvent,
+        onKeyEvent: widget.controller.onKeyEvent,
         child: MouseRegion(
           cursor: getCursor(),
           onExit: (event) {
-            _hoverPos = null;
+            widget.controller.updateHover(null);
             for (final node in nodes) {
               node.hovered = false;
             }
@@ -311,40 +204,19 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             }
           },
           onEnter: (event) {
-            _updateHover(event.localPosition);
+            widget.controller.updateHover(event.localPosition);
           },
           onHover: (event) {
-            _updateHover(event.localPosition);
+            widget.controller.updateHover(event.localPosition);
           },
           child: Listener(
-            onPointerSignal: (event) {
-              _scheduleAutoMove?.cancel();
-              if (event is PointerScrollEvent) {
-                if (_controlKeyPressed) {
-                  viewportController.addPan(-event.scrollDelta);
-                } else {
-                  final dy = event.scrollDelta.dy;
-                  if (dy > 0) {
-                    viewportController.zoomOut(
-                      focalPoint: event.localPosition,
-                      animationDuration: Duration.zero,
-                    );
-                  } else {
-                    viewportController.zoomIn(
-                      focalPoint: event.localPosition,
-                      animationDuration: Duration.zero,
-                    );
-                  }
-                }
-              }
-              _updateAutoMoveStatus();
-            },
+            onPointerSignal: widget.controller.onPointerSignal,
             child: GestureDetector(
               supportedDevices: {...PointerDeviceKind.values},
               onTapUp: (details) => _tapUp(details.localPosition),
-              onScaleStart: onScaleStart,
-              onScaleUpdate: onScaleUpdate,
-              onScaleEnd: onScaleEnd,
+              onScaleStart: widget.controller.onScaleStart,
+              onScaleUpdate: widget.controller.onScaleUpdate,
+              onScaleEnd: widget.controller.onScaleEnd,
 
               child: child,
             ),
@@ -421,7 +293,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         widget.onSelectionChanged!,
       );
     }
-    _scheduleAutoMove?.cancel();
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
@@ -441,7 +312,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       //   edge.joint.anchorB,
       // );
       // final offset = (positionBodyA + positionBodyB) / 2;
-      Offset? offset = _hoverPos;
+      Offset? offset = widget.controller.hoverPosition;
       if (offset == null) {
         return const SizedBox.shrink();
       }
@@ -475,21 +346,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     return const SizedBox.shrink();
   }
 
-  void _updateAutoMoveStatus() {
-    if (!widget.controller.enableNodesAutoMove) {
-      return;
-    }
-    final canAutoMove =
-        widget.controller.isHovering && !isDraggingNode && !isPanning;
-    if (canAutoMove) {
-      _scheduleAutoMove = Timer(const Duration(milliseconds: 500), () {
-        widget.controller.startNodesAutoMove();
-      });
-    } else {
-      _scheduleAutoMove?.cancel();
-      widget.controller.stopNodesAutoMove();
-    }
-  }
+ 
 }
 
 class GraphPainter extends CustomPainter {
@@ -497,12 +354,16 @@ class GraphPainter extends CustomPainter {
   final Iterable<ForceGraphEdge> joints;
   final ValueChanged<Size> onCanvasSizeChanged;
   final void Function(Canvas canvas) transform;
+  final Rect? selectionRect;
+  final Color? selectionColor;
 
   GraphPainter(
     this.nodes,
     this.joints,
     this.onCanvasSizeChanged,
     this.transform,
+    this.selectionRect,
+    this.selectionColor
   );
 
   Size? _oldSize;
@@ -521,6 +382,17 @@ class GraphPainter extends CustomPainter {
 
     for (final node in nodes) {
       node.draw(canvas);
+    }
+
+    if (selectionRect != null) {
+      final paint = Paint()
+        ..color = selectionColor ?? Colors.blue.withValues(alpha: 0.1);
+      canvas.drawRect(selectionRect!, paint);
+      final borderPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..color = selectionColor?.withValues(alpha: 1) ?? Colors.blue
+        ..strokeWidth = 0.1;
+      canvas.drawRect(selectionRect!, borderPaint);
     }
   }
 

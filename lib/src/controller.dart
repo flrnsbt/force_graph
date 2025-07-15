@@ -5,8 +5,10 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:force_graph/src/data.dart';
 import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/graph_builder/graph_builder.dart';
@@ -25,10 +27,13 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool uniformEdgeWeight;
 
+  final bool enableSelection;
+
   final LinkedHashSet<String> _selectedNodeIds = LinkedHashSet();
 
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
+    this.enableSelection = true,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
@@ -165,6 +170,8 @@ class ForceGraphController extends ChangeNotifier {
       node.update(dt, eMs);
     }
 
+   
+
     notifyListeners();
   }
 
@@ -186,57 +193,6 @@ class ForceGraphController extends ChangeNotifier {
     node.selected = true;
     if (animateToCenter) {
       node._animateCenter();
-    }
-  }
-
-  String? $_hoveredNodeID;
-
-  ForceGraphNode? get hoveredNode => _nodes[$_hoveredNodeID];
-
-  bool get isHovering => $_hoveredNodeID != null || $_hoveredEdgeID != null;
-
-  bool get isPhysicallyHovering => isHovering && !_programaticalHover;
-
-  bool _programaticalHover = false;
-
-  void hoverNode(
-    String? nodeID, {
-    bool animateToCenter = false,
-    bool programatical = true,
-  }) {
-    if (nodeID != $_hoveredNodeID) {
-      if ($_hoveredNodeID != null) {
-        final node = _nodes[$_hoveredNodeID]!;
-        node.hovered = false;
-      }
-      if (nodeID != null) {
-        final node = _nodes[nodeID]!;
-        node.hovered = true;
-        if (animateToCenter) {
-          node._animateCenter();
-        }
-      }
-      _programaticalHover = programatical;
-      $_hoveredNodeID = nodeID;
-    }
-  }
-
-  int? $_hoveredEdgeID;
-
-  ForceGraphEdge? get hoveredEdge => _joints[$_hoveredEdgeID];
-
-  void hoverEdge(int? edgeID, {bool programatical = true}) {
-    if (edgeID != $_hoveredEdgeID) {
-      if ($_hoveredEdgeID != null) {
-        final edge = _joints[$_hoveredEdgeID]!;
-        edge.hovered = false;
-      }
-      if (edgeID != null) {
-        final edge = _joints[edgeID]!;
-        edge.hovered = true;
-      }
-      _programaticalHover = programatical;
-      $_hoveredEdgeID = edgeID;
     }
   }
 
@@ -397,6 +353,7 @@ class ForceGraphController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _scheduleAutoMove?.cancel();
     _graphBuilder.stop();
     super.dispose();
     disposeTicker();
@@ -426,7 +383,7 @@ class ForceGraphController extends ChangeNotifier {
   double? edgeHiddenOpacity;
 
   Color? edgeHightlightColor;
-  
+
   List<ForceGraphNode> get selectedNodes {
     return [for (final id in _selectedNodeIds) _nodes[id]!];
   }
@@ -496,6 +453,271 @@ class ForceGraphController extends ChangeNotifier {
   void disposeTicker() {
     _ticker?.dispose();
     _ticker = null;
+  }
+
+  bool _isDraggingNode = false;
+  Offset? _selectionStart;
+  Offset? _selectionEnd;
+  Offset? _hoverPos;
+  Offset? get hoverPosition => _hoverPos;
+  bool get isDraggingNode => _isDraggingNode;
+  bool get isSelecting => _selectionStart != null;
+  bool get isPanning => _controlKeyPressed;
+  bool get _controlKeyPressed => HardwareKeyboard.instance.isControlPressed;
+  MouseJoint? _mouseJoint;
+
+  Rect? get selectionRect {
+    if (_selectionStart != null && _selectionEnd != null) {
+      return Rect.fromPoints(_selectionStart!, _selectionEnd!);
+    }
+    return null;
+  }
+
+  void startSelecting(Vector2 worldTouch) {
+    if (!enableSelection) {
+      return;
+    }
+    stopSelecting();
+    _selectionStart = worldTouch.toOffset();
+    _selectionEnd = _selectionStart;
+  }
+
+  void stopSelecting() {
+    _selectionStart = null;
+    _selectionEnd = null;
+  }
+
+  void startDragging(Body body, Vector2 targetWorld) {
+    stopDragging();
+    final mouseJointDef = MouseJointDef()
+      ..bodyA = ground
+      ..bodyB = body
+      ..target.setFrom(targetWorld)
+      ..maxForce = body.mass * 60
+      ..dampingRatio = 1;
+    _mouseJoint = MouseJoint(mouseJointDef);
+    world.createJoint(_mouseJoint!);
+  }
+
+  void stopDragging() {
+    if (_mouseJoint != null) {
+      world.destroyJoint(_mouseJoint!);
+      _mouseJoint = null;
+    }
+  }
+
+  String? $_hoveredNodeID;
+
+  ForceGraphNode? get hoveredNode => _nodes[$_hoveredNodeID];
+
+  bool get isHovering => $_hoveredNodeID != null || $_hoveredEdgeID != null;
+
+  bool get isPhysicallyHovering => isHovering && !_programaticalHover;
+
+  bool _programaticalHover = false;
+
+  bool get canAutoMove =>
+      isHovering && !isDraggingNode && !isPanning && !isSelecting;
+
+  void hoverNode(
+    String? nodeID, {
+    bool animateToCenter = false,
+    bool programatical = true,
+  }) {
+    if (nodeID != $_hoveredNodeID) {
+      if ($_hoveredNodeID != null) {
+        final node = _nodes[$_hoveredNodeID]!;
+        node.hovered = false;
+      }
+      if (nodeID != null) {
+        final node = _nodes[nodeID]!;
+        node.hovered = true;
+        if (animateToCenter) {
+          node._animateCenter();
+        }
+      }
+      _programaticalHover = programatical;
+      $_hoveredNodeID = nodeID;
+    }
+  }
+
+  int? $_hoveredEdgeID;
+
+  ForceGraphEdge? get hoveredEdge => _joints[$_hoveredEdgeID];
+
+  void hoverEdge(int? edgeID, {bool programatical = true}) {
+    if (edgeID != $_hoveredEdgeID) {
+      if ($_hoveredEdgeID != null) {
+        final edge = _joints[$_hoveredEdgeID]!;
+        edge.hovered = false;
+      }
+      if (edgeID != null) {
+        final edge = _joints[edgeID]!;
+        edge.hovered = true;
+      }
+      _programaticalHover = programatical;
+      $_hoveredEdgeID = edgeID;
+    }
+  }
+
+  void _updateAutoMoveStatus() {
+    if (!enableNodesAutoMove) {
+      return;
+    }
+    if (canAutoMove) {
+      _scheduleAutoMove = Timer(const Duration(milliseconds: 500), () {
+        startNodesAutoMove();
+      });
+    } else {
+      _scheduleAutoMove?.cancel();
+      stopNodesAutoMove();
+    }
+  }
+
+  Timer? _scheduleAutoMove;
+}
+
+extension ForceGraphControllerControlsExtension on ForceGraphController {
+  void onScaleStart(ScaleStartDetails details) {
+    _scheduleAutoMove?.cancel();
+    stopSelecting();
+    final worldTouch = viewportController.screenToWorld(
+      details.localFocalPoint,
+    );
+    final node = findBodyAt(worldTouch);
+
+    if (node != null) {
+      startDragging(node.body, worldTouch);
+    } else if (!isPanning) {
+      startSelecting(worldTouch);
+    }
+    _updateAutoMoveStatus();
+  }
+
+  void onPointerSignal(PointerSignalEvent event) {
+    _scheduleAutoMove?.cancel();
+    if (event is PointerScrollEvent) {
+      if (_controlKeyPressed) {
+        viewportController.addPan(-event.scrollDelta);
+      } else {
+        final dy = event.scrollDelta.dy;
+        if (dy > 0) {
+          viewportController.zoomOut(
+            focalPoint: event.localPosition,
+            animationDuration: Duration.zero,
+          );
+        } else {
+          viewportController.zoomIn(
+            focalPoint: event.localPosition,
+            animationDuration: Duration.zero,
+          );
+        }
+      }
+    }
+    _updateAutoMoveStatus();
+  }
+
+  static bool get _isMac => defaultTargetPlatform == TargetPlatform.macOS;
+
+  void onKeyEvent(KeyEvent event) {
+    final ctrlPressed = _isMac
+        ? HardwareKeyboard.instance.isMetaPressed
+        : _controlKeyPressed;
+    const factor = 10.0;
+    switch (event.physicalKey) {
+      case PhysicalKeyboardKey.arrowUp:
+        if (ctrlPressed) {
+          viewportController.zoomIn();
+        } else {
+          viewportController.moveBy(Offset(0, factor));
+        }
+        break;
+      case PhysicalKeyboardKey.arrowDown:
+        if (ctrlPressed) {
+          viewportController.zoomOut();
+        } else {
+          viewportController.moveBy(Offset(0, -factor));
+        }
+        break;
+      case PhysicalKeyboardKey.arrowLeft:
+        viewportController.moveBy(Offset(factor, 0));
+        break;
+      case PhysicalKeyboardKey.arrowRight:
+        viewportController.moveBy(Offset(-factor, 0));
+        break;
+    }
+  }
+
+  void updateHover(Offset? position) {
+    _scheduleAutoMove?.cancel();
+
+    _hoverPos = position;
+    if (position != null) {
+      final worldPos = viewportController.screenToWorld(position);
+      final node = findBodyAt(worldPos);
+      hoverNode(node?.iD, programatical: false);
+
+      final joint = findJointAt(worldPos);
+      hoverEdge(joint?.data.iD, programatical: false);
+      _updateAutoMoveStatus();
+    }
+  }
+
+  void onScaleUpdate(ScaleUpdateDetails details) {
+    _scheduleAutoMove?.cancel();
+
+    if (isSelecting) {
+      final selectionEnd = viewportController.screenToWorld(
+        details.localFocalPoint,
+      );
+      _selectionEnd = selectionEnd.toOffset();
+      if (!viewportController.screenRect.contains(
+        details.localFocalPoint + details.focalPointDelta,
+      )) {
+        viewportController.addPan(-details.focalPointDelta);
+      }
+      return;
+    }
+
+    final scale = details.scale;
+
+    if (scale != 1.0) {
+      double dt = scale - 1;
+      if (dt.isNegative) {
+        dt /= 20;
+      } else {
+        dt /= 40;
+      }
+      final zoomScale = 1 + dt;
+      viewportController.multiplyZoom(
+        zoomScale,
+        focalPoint: details.localFocalPoint,
+        animationDuration: Duration.zero,
+      );
+    } else if (isPanning) {
+      _isDraggingNode = false;
+      stopSelecting();
+      viewportController.addPan(details.focalPointDelta);
+    } else if (_mouseJoint != null) {
+      _isDraggingNode = true;
+      final worldTarget = viewportController.screenToWorld(
+        details.localFocalPoint,
+      );
+      _mouseJoint?.setTarget(worldTarget);
+    }
+  }
+
+  void onScaleEnd(ScaleEndDetails details) {
+    _scheduleAutoMove?.cancel();
+
+    if (isDraggingNode) {
+      stopDragging();
+    }
+    if (isSelecting) {
+      stopSelecting();
+    }
+    _isDraggingNode = false;
+    _updateAutoMoveStatus();
   }
 }
 
@@ -960,6 +1182,10 @@ class ForceGraphNode {
   void update(double dt, int totalMs) {
     if (enableAutoMove) {
       _handleAutoMove(dt, totalMs);
+    }
+    final selectionRect = _controller.selectionRect;
+    if (selectionRect != null) {
+      selected = selectionRect.contains(body.position.toOffset());
     }
   }
 
