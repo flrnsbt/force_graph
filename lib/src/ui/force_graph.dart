@@ -89,6 +89,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   @override
   void initState() {
     super.initState();
+    widget.controller.initWorld(this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.controller.addListener(_refreshUI);
     });
@@ -97,7 +99,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         widget.onSelectionChanged!,
       );
     }
-    widget.controller.initWorld(this);
   }
 
   void _refreshUI() {
@@ -439,7 +440,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
-    widget.controller.stop();
+    widget.controller.disposeTicker();
     widget.controller.removeListener(_refreshUI);
 
     super.dispose();

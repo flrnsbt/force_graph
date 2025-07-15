@@ -119,9 +119,6 @@ class ForceGraphController extends ChangeNotifier {
 
   void initWorld(TickerProvider state) {
     _ticker = state.createTicker(_stepWorld);
-    if (viewportController.hasSize) {
-      _ticker!.start();
-    }
   }
 
   int _elapsedMs = 0;
@@ -183,7 +180,7 @@ class ForceGraphController extends ChangeNotifier {
     try {
       _clear();
       _error = null;
-      _ticker?.stop();
+      _ticker!.stop();
       _loadingProgressStep = 0;
       _loadingTotalStep = _graphBuilder.iterations;
 
@@ -196,7 +193,7 @@ class ForceGraphController extends ChangeNotifier {
         await _loadData(_rawData);
         _isReady = true;
         _isReadyCallback();
-        _ticker?.start();
+        _ticker!.start();
       }
       if (_completer != null && _completer!.isCompleted == false) {
         _completer!.complete();
@@ -331,7 +328,7 @@ class ForceGraphController extends ChangeNotifier {
   void dispose() {
     _graphBuilder.stop();
     super.dispose();
-    _ticker?.dispose();
+    disposeTicker();
     _clear();
     world.clearForces();
   }
@@ -413,6 +410,11 @@ class ForceGraphController extends ChangeNotifier {
 
   void stop() {
     _ticker?.stop(canceled: true);
+  }
+
+  void disposeTicker() {
+    _ticker?.dispose();
+    _ticker = null;
   }
 }
 
@@ -853,7 +855,6 @@ class ForceGraphNode {
           Colors.redAccent;
 
       canvas.drawCircle(pos, radius, newPaint);
-    
     }
     if (_opacity != 1) {
       paint.color = paint.color.withValues(alpha: _opacity);
