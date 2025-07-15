@@ -456,19 +456,32 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   bool _isDraggingNode = false;
-  Offset? _selectionStart;
-  Offset? _selectionEnd;
-  Offset? _hoverPos;
-  Offset? get hoverPosition => _hoverPos;
+  Vector2? _selectionStart;
+  Vector2? _selectionEnd;
+  Offset? _hoverPosition;
+  Offset? get hoverPosition => _hoverPosition;
   bool get isDraggingNode => _isDraggingNode;
   bool get isSelecting => _selectionStart != null;
   bool get isPanning => _controlKeyPressed;
   bool get _controlKeyPressed => HardwareKeyboard.instance.isControlPressed;
   MouseJoint? _mouseJoint;
 
-  Rect? get selectionRect {
+  Rect? get worldSelectionRect {
     if (_selectionStart != null && _selectionEnd != null) {
-      return Rect.fromPoints(_selectionStart!, _selectionEnd!);
+      return Rect.fromPoints(
+        _selectionStart!.toOffset(),
+        _selectionEnd!.toOffset(),
+      );
+    }
+    return null;
+  }
+
+  Rect? get screenSelectionRect {
+    if (_selectionStart != null && _selectionEnd != null) {
+      return Rect.fromPoints(
+        viewportController.worldToScreen(_selectionStart!),
+        viewportController.worldToScreen(_selectionEnd!),
+      );
     }
     return null;
   }
@@ -478,7 +491,7 @@ class ForceGraphController extends ChangeNotifier {
       return;
     }
     stopSelecting();
-    _selectionStart = worldTouch.toOffset();
+    _selectionStart = worldTouch;
     _selectionEnd = _selectionStart;
   }
 
@@ -575,6 +588,7 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   Timer? _scheduleAutoMove;
+
 }
 
 extension ForceGraphControllerControlsExtension on ForceGraphController {
@@ -651,7 +665,7 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
   void updateHover(Offset? position) {
     _scheduleAutoMove?.cancel();
 
-    _hoverPos = position;
+    _hoverPosition = position;
     if (position != null) {
       final worldPos = viewportController.screenToWorld(position);
       final node = findBodyAt(worldPos);
@@ -670,7 +684,7 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       final selectionEnd = viewportController.screenToWorld(
         details.localFocalPoint,
       );
-      _selectionEnd = selectionEnd.toOffset();
+      _selectionEnd = selectionEnd;
       if (!viewportController.screenRect.contains(
         details.localFocalPoint + details.focalPointDelta,
       )) {
@@ -957,6 +971,8 @@ class ViewportController {
     _zoomAnimateElement = null;
     _panAnimateElement = null;
   }
+  
+ 
 }
 
 class ForceGraphEdge {
@@ -1183,7 +1199,7 @@ class ForceGraphNode {
     if (enableAutoMove) {
       _handleAutoMove(dt, totalMs);
     }
-    final selectionRect = _controller.selectionRect;
+    final selectionRect = _controller.worldSelectionRect;
     if (selectionRect != null) {
       selected = selectionRect.contains(body.position.toOffset());
     }

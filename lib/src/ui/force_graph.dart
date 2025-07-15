@@ -1,12 +1,8 @@
-import 'dart:async';
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:force_graph/src/controller.dart';
-import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/ui/control_bar.dart';
 import 'package:force_graph/src/ui/tooltip.dart';
 import 'package:forge2d/forge2d.dart';
@@ -165,6 +161,10 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     final joints = widget.controller.joints;
     Widget child = ClipRect(
       child: CustomPaint(
+        foregroundPainter: GraphForegroundPainter(
+          widget.controller.screenSelectionRect,
+          widget.selectionOverlayColor,
+        ),
         painter: GraphPainter(
           nodes,
           joints,
@@ -182,8 +182,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
               ..scale(zoomScale, zoomScale);
             canvas.transform(matrix.storage);
           },
-          widget.controller.selectionRect,
-          widget.selectionOverlayColor
+       
         ),
       ),
     );
@@ -349,21 +348,44 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
  
 }
 
+class GraphForegroundPainter extends CustomPainter {
+  final Rect? selectionRect;
+  final Color? selectionColor;
+
+  GraphForegroundPainter(this.selectionRect, this.selectionColor);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (selectionRect != null) {
+      final paint = Paint()
+        ..color = selectionColor ?? Colors.blue.withValues(alpha: 0.1);
+      canvas.drawRect(selectionRect!, paint);
+      final borderPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..color = selectionColor?.withValues(alpha: 1) ?? Colors.blue
+        ..strokeWidth = 0.8;
+      canvas.drawRect(selectionRect!, borderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant GraphForegroundPainter oldDelegate) {
+    return selectionRect != oldDelegate.selectionRect ||
+        selectionColor != oldDelegate.selectionColor;
+  }
+}
+
 class GraphPainter extends CustomPainter {
   final Iterable<ForceGraphNode> nodes;
   final Iterable<ForceGraphEdge> joints;
   final ValueChanged<Size> onCanvasSizeChanged;
   final void Function(Canvas canvas) transform;
-  final Rect? selectionRect;
-  final Color? selectionColor;
 
   GraphPainter(
     this.nodes,
     this.joints,
     this.onCanvasSizeChanged,
     this.transform,
-    this.selectionRect,
-    this.selectionColor
   );
 
   Size? _oldSize;
@@ -384,16 +406,7 @@ class GraphPainter extends CustomPainter {
       node.draw(canvas);
     }
 
-    if (selectionRect != null) {
-      final paint = Paint()
-        ..color = selectionColor ?? Colors.blue.withValues(alpha: 0.1);
-      canvas.drawRect(selectionRect!, paint);
-      final borderPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..color = selectionColor?.withValues(alpha: 1) ?? Colors.blue
-        ..strokeWidth = 0.1;
-      canvas.drawRect(selectionRect!, borderPaint);
-    }
+    
   }
 
   @override
