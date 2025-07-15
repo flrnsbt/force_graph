@@ -336,6 +336,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
               _scheduleAutoMove?.cancel();
               if (event is PointerScrollEvent) {
                 if (HardwareKeyboard.instance.isControlPressed) {
+                  viewportController.addPan(-event.scrollDelta);
+                } else {
                   final dy = event.scrollDelta.dy;
                   if (dy > 0) {
                     viewportController.zoomOut(
@@ -348,8 +350,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
                       animationDuration: Duration.zero,
                     );
                   }
-                } else {
-                  viewportController.addPan(-event.scrollDelta);
                 }
               }
               _updateAutoMoveStatus();
