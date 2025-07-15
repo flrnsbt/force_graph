@@ -68,7 +68,7 @@ class ForceGraphController extends ChangeNotifier {
     double minY = double.maxFinite;
     double maxX = -double.maxFinite;
     double maxY = -double.maxFinite;
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       final pos =
           node.position.toOffset() *
           viewportController.zoom *
@@ -143,7 +143,7 @@ class ForceGraphController extends ChangeNotifier {
 
     world.stepDt(dt);
     viewportController.update(dt);
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       node.update(dt, eMs);
     }
 
@@ -151,20 +151,20 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   void clearNodeForces() {
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       node.body.clearForces();
     }
   }
 
   void stopNodesAutoMove() {
     if (!enableNodesAutoMove) return;
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       node.enableAutoMove = false;
     }
   }
 
   void selectNode(String nodeID, {bool animateToCenter = true}) {
-    final node = _nodes.firstWhere((n) => n.iD == nodeID);
+    final node = _nodes[nodeID]!;
     node.selected = true;
     if (animateToCenter) {
       node._animateCenter();
@@ -214,7 +214,7 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   ForceGraphNode? findBodyAt(Vector2 worldPoint) {
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       final fixture = node.body.fixtures.firstOrNull;
       if (fixture != null && fixture.testPoint(worldPoint)) return node;
     }
@@ -264,17 +264,17 @@ class ForceGraphController extends ChangeNotifier {
 
   final World world = World(Vector2.zero());
 
-  final List<ForceGraphNode> _nodes = [];
+  final Map<String, ForceGraphNode> _nodes = {};
   final List<ForceGraphEdge> _joints = [];
 
   UnmodifiableListView<ForceGraphNode> get nodes =>
-      UnmodifiableListView(_nodes);
+      UnmodifiableListView(_nodes.values);
 
   UnmodifiableListView<ForceGraphEdge> get joints =>
       UnmodifiableListView(_joints);
 
   void clearSelection() {
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       node.selected = false;
     }
   }
@@ -286,7 +286,7 @@ class ForceGraphController extends ChangeNotifier {
   final __onSelectionChangeds = <void Function(List<ForceGraphNode>)>[];
 
   void _onSelectionChanged() {
-    final s = _nodes.where((node) => node.selected).toList();
+    final s = _nodes.values.where((node) => node.selected).toList();
     for (final f in __onSelectionChangeds) {
       f(s);
     }
@@ -305,7 +305,7 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   void _clear() {
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       world.destroyBody(node.body);
     }
     _joints.clear();
@@ -352,7 +352,7 @@ class ForceGraphController extends ChangeNotifier {
         linearDamping: 2.5,
         enableNodesAutoMove: enableNodesAutoMove,
       );
-      _nodes.add(body);
+      _nodes[e.key.id] = body;
     }
 
     for (final edge in layout.edges) {
@@ -368,14 +368,14 @@ class ForceGraphController extends ChangeNotifier {
         _joints.add(e);
         world.createJoint(e.joint);
       } catch (e) {
-        print('Error creating joint for edge $edge: $e');
+        debugPrint('Error creating joint for edge $edge: $e');
       }
     }
   }
 
   (Body nodeA, Body nodeB) _getBodyPair(ForceGraphEdgeData edge) {
-    final nodeA = _nodes.firstWhere((n) => n.iD == edge.source);
-    final nodeB = _nodes.firstWhere((n) => n.iD == edge.target);
+    final nodeA = _nodes[edge.source]!;
+    final nodeB = _nodes[edge.target]!;
     return (nodeA.body, nodeB.body);
   }
 
@@ -389,7 +389,7 @@ class ForceGraphController extends ChangeNotifier {
 
   void startNodesAutoMove() {
     if (!enableNodesAutoMove) return;
-    for (final node in _nodes) {
+    for (final node in _nodes.values) {
       node.enableAutoMove = true;
     }
   }
@@ -783,14 +783,12 @@ class ForceGraphNode {
             edge._highlight = true;
             edge._disable = false;
             if (isTarget) {
-              _controller._nodes
-                      .firstWhere((n) => n.data.id == edge.data.source)
+              _controller._nodes[edge.data.source]!
                       ._opacity =
                   0.8;
             }
             if (isSource) {
-              _controller._nodes
-                      .firstWhere((n) => n.data.id == edge.data.target)
+              _controller._nodes[edge.data.target]!
                       ._opacity =
                   0.8;
             }
