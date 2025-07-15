@@ -20,6 +20,7 @@ class ForceGraphWidget extends StatefulWidget {
     this.nodeTooltipBuilder,
     this.edgeTooltipBuilder,
     this.nodeTooltipSpacing = 8,
+    this.offsetUpdater,
     this.edgeTooltipSpacing = 20,
     this.customControlBarBuilder,
     this.focusNode,
@@ -34,6 +35,7 @@ class ForceGraphWidget extends StatefulWidget {
   final EdgeInsets controlBarSpacing;
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
+  final Offset Function(Offset position)? offsetUpdater;
   final Widget Function(BuildContext context, ForceGraphEdge edge)?
   edgeTooltipBuilder;
   final Widget Function(BuildContext context, ForceGraphController controller)?
@@ -320,10 +322,10 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             }
           },
           onEnter: (event) {
-            _updateHover(event.position);
+            _updateHover(event.localPosition);
           },
           onHover: (event) {
-            _updateHover(event.position);
+            _updateHover(event.localPosition);
           },
           child: Listener(
             onPointerSignal: (event) {
@@ -450,9 +452,12 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       //   edge.joint.anchorB,
       // );
       // final offset = (positionBodyA + positionBodyB) / 2;
-      final offset = _hoverPos;
+      Offset? offset = _hoverPos;
       if (offset == null) {
         return const SizedBox.shrink();
+      }
+      if (widget.offsetUpdater != null) {
+        offset = widget.offsetUpdater!(offset);
       }
       return Positioned(
         left: offset.dx,
@@ -468,7 +473,10 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
     final node = _hoveredNode;
     if (node != null && widget.nodeTooltipBuilder != null) {
-      final position = viewportController.worldToScreen(node.position);
+      Offset position = viewportController.worldToScreen(node.position);
+      if (widget.offsetUpdater != null) {
+        position = widget.offsetUpdater!(position);
+      }
       return Positioned(
         left: position.dx,
         top: position.dy,

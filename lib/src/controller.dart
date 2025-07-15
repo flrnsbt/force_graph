@@ -180,9 +180,9 @@ class ForceGraphController extends ChangeNotifier {
       _loadingTotalStep = _graphBuilder.iterations;
 
       if (_rawData.isNotEmpty) {
-        _isReady = false;
-        _isLoading = true;
         if (notifyReadyStatusChange) {
+          _isReady = false;
+          _isLoading = true;
           notifyListeners();
         }
         await _loadData(_rawData);
