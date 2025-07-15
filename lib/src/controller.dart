@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:force_graph/src/data.dart';
@@ -23,6 +24,7 @@ class ForceGraphController extends ChangeNotifier {
   final bool uniformEdgeWeight;
 
   ForceGraphController({
+    bool graphBuilderDebugLogs = kDebugMode,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     int maxSelection = 1,
@@ -37,6 +39,7 @@ class ForceGraphController extends ChangeNotifier {
   }) : maxSelected = maxSelection,
        viewportController = ViewportController(zoom: initialZoom, scale: scale),
        _graphBuilder = ForceDirectedGraphBuilder(
+         debugLogs: graphBuilderDebugLogs,
          iterations: forceDirectedGraphLayoutIteration,
          repulsion: forceDirectedGraphLayoutRepulse,
          algorithmType: algorithmType,
@@ -169,6 +172,11 @@ class ForceGraphController extends ChangeNotifier {
     if (animateToCenter) {
       node._animateCenter();
     }
+  }
+
+  void focusNode(String nodeID) {
+    final node = _nodes[nodeID]!;
+    node._animateCenter();
   }
 
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
@@ -404,7 +412,7 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   void stop() {
-    _ticker?.stop();
+    _ticker?.stop(canceled: true);
   }
 }
 
@@ -724,7 +732,7 @@ class ForceGraphNode {
 
     final body = world.createBody(nodeDef);
 
-    final shape = CircleShape(radius: minimumSpacing);
+    final shape = CircleShape(radius: max(minimumSpacing, node.radius));
     body.createFixture(FixtureDef(shape, friction: 0.1));
     // body.setMassData(MassData()..mass = .1 * node.edges.length);
     body.setMassData(_mass);
@@ -823,21 +831,29 @@ class ForceGraphNode {
     final pos = position.toOffset();
     final paint = Paint()..color = data.style.color ?? Colors.blue;
 
-    double radius = 0.3;
+    double radius = data.radius;
 
     if (hovered) {
       radius *= 1.5;
     }
+    bool hasBorder = _selected || data.style.colorBorder != null;
     if (_selected) {
-      final newPaint = Paint.from(paint);
-      newPaint.strokeWidth = 0.075;
-      newPaint.style = PaintingStyle.stroke;
-      newPaint.color = data.style.selectedColorBorder ?? Colors.redAccent;
-
-      canvas.drawCircle(pos, radius, newPaint);
       if (data.style.selectedColor != null) {
         paint.color = data.style.selectedColor!;
       }
+    }
+    if (hasBorder) {
+      final newPaint = Paint.from(paint);
+      newPaint.strokeWidth = data.style.borderWidth;
+      newPaint.style = PaintingStyle.stroke;
+      newPaint.color =
+          (_selected
+              ? data.style.selectedColorBorder
+              : data.style.colorBorder) ??
+          Colors.redAccent;
+
+      canvas.drawCircle(pos, radius, newPaint);
+    
     }
     if (_opacity != 1) {
       paint.color = paint.color.withValues(alpha: _opacity);

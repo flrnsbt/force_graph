@@ -17,6 +17,8 @@ class ForceDirectedGraphBuilder {
   double repulsion;
   double attraction;
 
+  final bool debugLogs;
+
   AlgorithmType algorithmType;
 
   ForceDirectedGraphBuilder({
@@ -24,6 +26,7 @@ class ForceDirectedGraphBuilder {
     required this.repulsion,
     required this.attraction,
     this.algorithmType = AlgorithmType.springEmbedder,
+    this.debugLogs = false,
   });
 
   IsolateManager? _isolate;
@@ -41,7 +44,7 @@ class ForceDirectedGraphBuilder {
     edges.clear();
     _nodes.clear();
     _nodes.addAll(nodes);
-    final isolate = _isolate = algorithmType.createIsolate();
+    final isolate = _isolate = algorithmType.createIsolate(debugLogs);
     try {
       final nodesJSON = <Map>[];
       for (final node in nodes) {
@@ -118,7 +121,7 @@ enum AlgorithmType {
 
   const AlgorithmType(this.functionName);
 
-  IsolateManager createIsolate() {
+  IsolateManager createIsolate([bool enableDebugLogs = false]) {
     FutureOr<void> Function(dynamic) function;
     if (this == springEmbedder) {
       function = performSpringEmbedderLayoutIsolate;
@@ -127,7 +130,7 @@ enum AlgorithmType {
     }
     return IsolateManager.createCustom(
       function,
-      isDebug: kDebugMode,
+      isDebug: enableDebugLogs,
       converter: (value) {
         if (value is ImType) {
           return value.unwrap;

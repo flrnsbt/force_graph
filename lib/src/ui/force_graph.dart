@@ -90,11 +90,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.addListener(() {
-        if (mounted) {
-          setState(() {});
-        }
-      });
+      widget.controller.addListener(_refreshUI);
     });
     if (widget.onSelectionChanged != null) {
       widget.controller.addOnSelectionChangedListener(
@@ -102,6 +98,12 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       );
     }
     widget.controller.initWorld(this);
+  }
+
+  void _refreshUI() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Vector2 _screenToWorld(Offset pos) {
@@ -438,7 +440,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       _focusNode.dispose();
     }
     widget.controller.stop();
-    widget.controller.removeListener(() {});
+    widget.controller.removeListener(_refreshUI);
 
     super.dispose();
   }
@@ -464,10 +466,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         target: offset,
         offset: Offset(0, widget.edgeTooltipSpacing),
         child: Material(
-            type: MaterialType.transparency,
-            child: widget.edgeTooltipBuilder!(context, edge),
-          ),
-        
+          type: MaterialType.transparency,
+          child: widget.edgeTooltipBuilder!(context, edge),
+        ),
       );
     }
     final node = _hoveredNode;
@@ -480,10 +481,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         target: position,
         offset: Offset(0, widget.nodeTooltipSpacing),
         child: Material(
-            type: MaterialType.transparency,
-            child: widget.nodeTooltipBuilder!(context, node),
-          ),
-        
+          type: MaterialType.transparency,
+          child: widget.nodeTooltipBuilder!(context, node),
+        ),
       );
     }
     return const SizedBox.shrink();

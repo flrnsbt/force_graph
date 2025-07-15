@@ -9,12 +9,14 @@ class ForceGraphNodeData {
   final GraphComponentStyle style;
   final String title;
   final Object? data;
+  final double radius;
   const ForceGraphNodeData(
     this.id,
     this.edges,
     this.style,
     this.title,
     this.data,
+    this.radius,
   );
 
   factory ForceGraphNodeData.from({
@@ -23,8 +25,9 @@ class ForceGraphNodeData {
     GraphComponentStyle style = GraphComponentStyle.none,
     String title = '',
     Object? data,
+    double radius = 0.3,
   }) {
-    return ForceGraphNodeData(id, edges, style, title, data);
+    return ForceGraphNodeData(id, edges, style, title, data, radius);
   }
 
   @override
@@ -83,33 +86,17 @@ class GraphComponentStyle {
   final Color? color;
   final Color? selectedColor;
   final Color? selectedColorBorder;
+  final Color? colorBorder;
+  final double borderWidth;
   const GraphComponentStyle({
     this.color,
     this.selectedColor,
     this.selectedColorBorder,
+    this.colorBorder,
+    this.borderWidth = 0.075,
   });
 
   static const none = GraphComponentStyle();
-
-  Map<String, dynamic> toJson() {
-    return {
-      'color': color?.toARGB32(),
-      'selectedColor': selectedColor?.toARGB32(),
-      'selectedColorBorder': selectedColorBorder?.toARGB32(),
-    };
-  }
-
-  factory GraphComponentStyle.fromJson(Map<String, dynamic> json) {
-    return GraphComponentStyle(
-      color: json['color'] != null ? Color(json['color']) : null,
-      selectedColor: json['selectedColor'] != null
-          ? Color(json['selectedColor'])
-          : null,
-      selectedColorBorder: json['selectedColorBorder'] != null
-          ? Color(json['selectedColorBorder'])
-          : null,
-    );
-  }
 }
 
 class AnimateElement<T extends Object> {
