@@ -96,8 +96,8 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void _onSizeSet() {
-    _init();
+  Future<void> _onSizeSet() {
+    return _init();
   }
 
   Ticker? _ticker;
@@ -190,8 +190,14 @@ class ForceGraphController extends ChangeNotifier {
         _isReadyCallback();
         _ticker?.start();
       }
+      if (_completer != null && _completer!.isCompleted == false) {
+        _completer!.complete();
+      }
     } catch (e) {
       _error = e;
+      if (_completer != null && _completer!.isCompleted == false) {
+        _completer!.completeError(e);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -209,8 +215,8 @@ class ForceGraphController extends ChangeNotifier {
 
   double get loadingProgress => _loadingProgressStep / _loadingTotalStep;
 
-  void reload() {
-    _init();
+  Future<void> reload() {
+    return _init();
   }
 
   ForceGraphNode? findBodyAt(Vector2 worldPoint) {
@@ -322,40 +328,43 @@ class ForceGraphController extends ChangeNotifier {
     world.clearForces();
   }
 
+  Completer<void>? _completer;
+
   Future<void> loadDataFrom(
     List<ForceGraphNodeData> nodes, {
     bool notifyReadyStatusChange = true,
-  }) async {
+  }) {
     _rawData.clear();
     _rawData.addAll(nodes);
+    _completer = Completer();
     if (viewportController.hasSize) {
-      await _init(notifyReadyStatusChange: notifyReadyStatusChange);
+      _init(notifyReadyStatusChange: notifyReadyStatusChange);
     }
+    return _completer!.future.whenComplete(() => null);
   }
 
   final ForceDirectedGraphBuilder _graphBuilder;
 
   Future<void> _loadData(List<ForceGraphNodeData> nodes) async {
     final worldSize = viewportController.worldSize;
-    final layout = _graphBuilder;
-    await layout.performLayout(nodes, worldSize, (progress) {
+    await _graphBuilder.performLayout(nodes, worldSize, (progress) {
       _loadingProgressStep = progress;
       notifyListeners();
     });
 
-    for (final e in layout.nodes.entries) {
+    for (final e in _graphBuilder.nodes.entries) {
       final body = ForceGraphNode._fromForceGraphNodeData(
         e.key,
         this,
         position: e.value,
-        minimumSpacing: layout.minimumSpacing,
+        minimumSpacing: _graphBuilder.minimumSpacing,
         linearDamping: 2.5,
         enableNodesAutoMove: enableNodesAutoMove,
       );
       _nodes[e.key.id] = body;
     }
 
-    for (final edge in layout.edges) {
+    for (final edge in _graphBuilder.edges) {
       try {
         final (nodeA, nodeB) = _getBodyPair(edge);
         final jointDef = DistanceJointDef()
@@ -783,14 +792,10 @@ class ForceGraphNode {
             edge._highlight = true;
             edge._disable = false;
             if (isTarget) {
-              _controller._nodes[edge.data.source]!
-                      ._opacity =
-                  0.8;
+              _controller._nodes[edge.data.source]!._opacity = 0.8;
             }
             if (isSource) {
-              _controller._nodes[edge.data.target]!
-                      ._opacity =
-                  0.8;
+              _controller._nodes[edge.data.target]!._opacity = 0.8;
             }
           } else {
             edge._disable = true;

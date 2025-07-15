@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:force_graph/src/controller.dart';
 import 'package:force_graph/src/ui/control_bar.dart';
+import 'package:force_graph/src/ui/tooltip.dart';
 import 'package:forge2d/forge2d.dart';
 
 class ForceGraphWidget extends StatefulWidget {
@@ -19,7 +20,7 @@ class ForceGraphWidget extends StatefulWidget {
     this.controlBarDirection,
     this.nodeTooltipBuilder,
     this.edgeTooltipBuilder,
-    this.nodeTooltipSpacing = 8,
+    this.nodeTooltipSpacing = 15,
     this.offsetUpdater,
     this.edgeTooltipSpacing = 20,
     this.customControlBarBuilder,
@@ -459,16 +460,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       if (widget.offsetUpdater != null) {
         offset = widget.offsetUpdater!(offset);
       }
-      return Positioned(
-        left: offset.dx,
-        top: offset.dy,
-        child: Padding(
-          padding: EdgeInsets.all(widget.edgeTooltipSpacing),
-          child: Material(
+      return TooltipPositionedWidget(
+        target: offset,
+        offset: Offset(0, widget.edgeTooltipSpacing),
+        child: Material(
             type: MaterialType.transparency,
             child: widget.edgeTooltipBuilder!(context, edge),
           ),
-        ),
+        
       );
     }
     final node = _hoveredNode;
@@ -477,16 +476,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       if (widget.offsetUpdater != null) {
         position = widget.offsetUpdater!(position);
       }
-      return Positioned(
-        left: position.dx,
-        top: position.dy,
-        child: Padding(
-          padding: EdgeInsets.all(widget.nodeTooltipSpacing),
-          child: Material(
+      return TooltipPositionedWidget(
+        target: position,
+        offset: Offset(0, widget.nodeTooltipSpacing),
+        child: Material(
             type: MaterialType.transparency,
             child: widget.nodeTooltipBuilder!(context, node),
           ),
-        ),
+        
       );
     }
     return const SizedBox.shrink();
