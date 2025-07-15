@@ -25,11 +25,13 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool uniformEdgeWeight;
 
+  final LinkedHashSet<String> _selectedNodeIds = LinkedHashSet();
+
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
-    int maxSelection = 1,
+    this.maxSelection = 1,
     this.uniformEdgeWeight = false,
     AlgorithmType algorithmType = AlgorithmType.springEmbedder,
     int forceDirectedGraphLayoutIteration = 800,
@@ -41,8 +43,7 @@ class ForceGraphController extends ChangeNotifier {
     this.nodeHiddenOpacity,
     double scale = 25,
     double initialZoom = ViewportController.minZoom,
-  }) : maxSelected = maxSelection,
-       viewportController = ViewportController(zoom: initialZoom, scale: scale),
+  }) : viewportController = ViewportController(zoom: initialZoom, scale: scale),
        _graphBuilder = ForceDirectedGraphBuilder(
          debugLogs: graphBuilderDebugLogs,
          iterations: forceDirectedGraphLayoutIteration,
@@ -69,7 +70,7 @@ class ForceGraphController extends ChangeNotifier {
     _graphBuilder.algorithmType = algorithmType;
   }
 
-  int maxSelected = 1;
+  int? maxSelection = 1;
 
   void recenter([bool adjustZoom = true]) {
     double minX = double.maxFinite;
@@ -387,6 +388,8 @@ class ForceGraphController extends ChangeNotifier {
     for (final node in _nodes.values) {
       world.destroyBody(node.body);
     }
+
+    _selectedNodeIds.clear();
     _joints.clear();
     _nodes.clear();
     _onSelectionChanged();
@@ -423,6 +426,10 @@ class ForceGraphController extends ChangeNotifier {
   double? edgeHiddenOpacity;
 
   Color? edgeHightlightColor;
+  
+  List<ForceGraphNode> get selectedNodes {
+    return [for (final id in _selectedNodeIds) _nodes[id]!];
+  }
 
   Future<void> _loadData(List<ForceGraphNodeData> nodes) async {
     final worldSize = viewportController.worldSize;
@@ -737,10 +744,15 @@ class ForceGraphEdge {
 
   bool hovered = false;
 
-  bool _highlight = false;
-  bool _hide = false;
-  bool get highlight => _highlight;
-  bool get hide => _hide;
+  bool get highlight {
+    final selectedNodeIDs = _controller._selectedNodeIds;
+    return selectedNodeIDs.contains(data.source) ||
+        selectedNodeIDs.contains(data.target);
+  }
+
+  bool get hide {
+    return _controller._selectedNodeIds.isNotEmpty && !highlight;
+  }
 
   ForceGraphEdge(this.joint, this.data, this._controller);
 
@@ -838,9 +850,7 @@ class ForceGraphNode {
 
   bool hovered = false;
 
-  bool _selected = false;
-
-  bool get selected => _selected;
+  bool get selected => _controller._selectedNodeIds.contains(iD);
 
   void _animateCenter() {
     if (!_controller.enableAutoCenterOnNodeSelection) {
@@ -856,52 +866,41 @@ class ForceGraphNode {
   }
 
   set selected(bool value) {
-    if (_selected != value) {
+    if (selected != value) {
       if (value) {
-        int selectedCount = 0;
-        for (final node in _controller.nodes) {
-          if (node._selected) {
-            selectedCount++;
-          }
-
-          if (selectedCount >= _controller.maxSelected) {
-            node._selected = false;
-          }
-
-          node.hide = true;
-        }
-
-        for (final edge in _controller._joints.values) {
-          final bool isTarget = edge.data.target == iD;
-          final bool isSource = edge.data.source == iD;
-          final opacity = _controller.nodeHiddenOpacity ?? 0.8;
-          if (isTarget || isSource) {
-            edge._highlight = true;
-            edge._hide = false;
-            if (isTarget) {
-              _controller._nodes[edge.data.source]!._opacity = opacity;
-            }
-            if (isSource) {
-              _controller._nodes[edge.data.target]!._opacity = opacity;
-            }
-          } else {
-            edge._hide = true;
-            edge._highlight = false;
+        if (_controller._selectedNodeIds.isEmpty) {
+          for (final node in _controller._nodes.values) {
+            node._opacity = _controller.nodeHiddenOpacity ?? 0.8;
           }
         }
-        hide = false;
+        if (_controller._selectedNodeIds.add(iD)) {
+          final selectionCount = _controller._selectedNodeIds.length;
+          if (_controller.maxSelection != null &&
+              selectionCount >= _controller.maxSelection!) {
+            _controller._selectedNodeIds.remove(
+              _controller._selectedNodeIds.first,
+            );
+          }
+        }
+
+        for (final edge in data.edges) {
+          if (edge.target == iD) {
+            _controller._nodes[edge.source]!._opacity = 1;
+          } else if (edge.source == iD) {
+            _controller._nodes[edge.target]!._opacity = 1;
+          }
+        }
         _opacity = 1;
       } else {
-        for (final edge in _controller.joints) {
-          edge._highlight = false;
-          edge._hide = false;
-        }
-        for (final node in _controller.nodes) {
-          node._opacity = 1;
-          node.hide = false;
+        _controller._selectedNodeIds.remove(iD);
+        if (_controller._selectedNodeIds.isNotEmpty) {
+          _opacity = _controller.nodeHiddenOpacity ?? 0.8;
+        } else {
+          for (final node in _controller._nodes.values) {
+            node._opacity = 1;
+          }
         }
       }
-      _selected = value;
       _controller._onSelectionChanged();
     }
   }
@@ -915,8 +914,9 @@ class ForceGraphNode {
     if (hovered) {
       radius *= 1.5;
     }
-    bool hasBorder = _selected || data.style.colorBorder != null;
-    if (_selected) {
+    final bool selected = this.selected;
+    bool hasBorder = selected || data.style.colorBorder != null;
+    if (selected) {
       if (data.style.selectedColor != null) {
         paint.color = data.style.selectedColor!;
       }
@@ -926,7 +926,7 @@ class ForceGraphNode {
       newPaint.strokeWidth = data.style.borderWidth;
       newPaint.style = PaintingStyle.stroke;
       newPaint.color =
-          (_selected
+          (selected
               ? data.style.selectedColorBorder
               : data.style.colorBorder) ??
           Colors.redAccent;
@@ -992,21 +992,6 @@ class ForceGraphNode {
   static final Vector2 _forceStrength = Vector2(0.01, .01);
 
   double _opacity = 1;
-
-  bool _hidden = false;
-
-  set hide(bool value) {
-    if (_hidden != value) {
-      _hidden = value;
-      if (_hidden) {
-        body.setMassData(MassData()..mass = 0);
-        _opacity = 0.1;
-      } else {
-        body.setMassData(_mass);
-        _opacity = 1;
-      }
-    }
-  }
 
   Vector2 _getDirection(_ForceDirection direction) {
     switch (direction) {

@@ -123,7 +123,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   bool isDraggingNode = false;
-  bool isPanning = false;
+  bool get isPanning => _controlKeyPressed;
+  bool get _controlKeyPressed => HardwareKeyboard.instance.isControlPressed;
   Body? draggedBody;
   MouseJoint? mouseJoint;
 
@@ -135,9 +136,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
     if (node != null) {
       startDragging(node.body, worldTouch);
-      isDraggingNode = true;
-    } else {
-      isPanning = true;
     }
     _updateAutoMoveStatus();
   }
@@ -161,13 +159,15 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         animationDuration: Duration.zero,
       );
     } else {
-      if (isDraggingNode && mouseJoint != null) {
+      if (isPanning) {
+        isDraggingNode = false;
+        viewportController.addPan(details.focalPointDelta);
+      } else if (mouseJoint != null) {
+        isDraggingNode = true;
         final worldTarget = viewportController.screenToWorld(
           details.focalPoint,
         );
         mouseJoint?.setTarget(worldTarget);
-      } else if (isPanning) {
-        viewportController.addPan(details.focalPointDelta);
       }
     }
   }
@@ -179,7 +179,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       stopDragging();
     }
     isDraggingNode = false;
-    isPanning = false;
     _updateAutoMoveStatus();
   }
 
@@ -205,7 +204,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
   }
 
-
   Offset? _hoverPos;
 
   void _updateHover(Offset position) {
@@ -222,6 +220,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   MouseCursor getCursor() {
+    if (isPanning) {
+      return SystemMouseCursors.move;
+    }
     if (isDraggingNode) {
       return SystemMouseCursors.grabbing;
     }
@@ -236,7 +237,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   void _onKeyEvent(KeyEvent event) {
     final ctrlPressed = _isMac
         ? HardwareKeyboard.instance.isMetaPressed
-        : HardwareKeyboard.instance.isControlPressed;
+        : _controlKeyPressed;
     const factor = 10.0;
     switch (event.physicalKey) {
       case PhysicalKeyboardKey.arrowUp:
@@ -319,7 +320,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             onPointerSignal: (event) {
               _scheduleAutoMove?.cancel();
               if (event is PointerScrollEvent) {
-                if (HardwareKeyboard.instance.isControlPressed) {
+                if (_controlKeyPressed) {
                   viewportController.addPan(-event.scrollDelta);
                 } else {
                   final dy = event.scrollDelta.dy;
@@ -479,9 +480,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       return;
     }
     final canAutoMove =
-        widget.controller.isHovering &&
-        !isDraggingNode &&
-        !isPanning;
+        widget.controller.isHovering && !isDraggingNode && !isPanning;
     if (canAutoMove) {
       _scheduleAutoMove = Timer(const Duration(milliseconds: 500), () {
         widget.controller.startNodesAutoMove();
