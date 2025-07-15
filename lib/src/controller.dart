@@ -315,6 +315,7 @@ class ForceGraphController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _graphBuilder.stop();
     super.dispose();
     _ticker?.dispose();
     _clear();

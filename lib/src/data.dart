@@ -34,7 +34,10 @@ class ForceGraphNodeData {
   @override
   int get hashCode => id.hashCode;
 
- 
+  @override
+  String toString() {
+    return 'ForceGraphNodeData(id: $id, edges: $edges)';
+  }
 }
 
 class ForceGraphEdgeData {
@@ -70,7 +73,10 @@ class ForceGraphEdgeData {
   @override
   int get hashCode => iD;
 
-
+  @override
+  String toString() {
+    return 'ForceGraphEdgeData(source: $source, target: $target, similarity: $similarity)';
+  }
 }
 
 class GraphComponentStyle {

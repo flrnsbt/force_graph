@@ -26,6 +26,12 @@ class ForceDirectedGraphBuilder {
     this.algorithmType = AlgorithmType.springEmbedder,
   });
 
+  IsolateManager? _isolate;
+
+  FutureOr<void> stop() async {
+    await _isolate?.stop();
+  }
+
   Future<void> performLayout(
     Iterable<ForceGraphNodeData> nodes,
     Size size, [
@@ -35,7 +41,7 @@ class ForceDirectedGraphBuilder {
     edges.clear();
     _nodes.clear();
     _nodes.addAll(nodes);
-    final isolate = algorithmType.createIsolate();
+    final isolate = _isolate = algorithmType.createIsolate();
     try {
       final nodesJSON = <Map>[];
       for (final node in nodes) {
