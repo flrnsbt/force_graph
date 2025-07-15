@@ -73,7 +73,12 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
           final targetID = edge.target;
           final source = positions[sourceID];
           final target = positions[targetID];
-          if (source == null || target == null) continue;
+          if (source == null) {
+            throw "Invalid Edge: couldn't find node $sourceID";
+          }
+          if (target == null) {
+            throw "Invalid Edge: couldn't find node $targetID";
+          }
 
           var dx = source.x - target.x;
           var dy = source.y - target.y;

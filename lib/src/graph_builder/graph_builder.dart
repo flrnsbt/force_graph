@@ -92,7 +92,7 @@ class ForceDirectedGraphBuilder {
         this.minimumSpacing = minimumSpacing;
       }
     } catch (e) {
-      print('error: $e');
+      debugPrint('error: $e');
       rethrow;
     } finally {
       await isolate.stop();
