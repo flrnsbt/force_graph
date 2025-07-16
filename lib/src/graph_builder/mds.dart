@@ -33,8 +33,6 @@ void performMDSLayoutIsolate(dynamic input) {
         }
       }
 
-      double minimumSpacing = double.infinity;
-
       double similarityToDistance(num similarity) {
         const minDist = 0.5;
         const maxDist = 25;
@@ -53,10 +51,6 @@ void performMDSLayoutIsolate(dynamic input) {
           final distance = similarityToDistance(edge.similarity);
           distances[sourceIdx][targetIdx] = distance;
           distances[targetIdx][sourceIdx] = distance;
-
-          if (minimumSpacing > distance) {
-            minimumSpacing = distance;
-          }
         }
       }
 
@@ -96,7 +90,6 @@ void performMDSLayoutIsolate(dynamic input) {
             e.key: {'x': e.value.x, 'y': e.value.y},
         },
         'final': true,
-        'minimumSpacing': minimumSpacing,
       });
     },
   );

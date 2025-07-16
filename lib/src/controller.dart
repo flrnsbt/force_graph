@@ -201,6 +201,25 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void zoomOnNode(String nodeID, [double? zoom]) {
+    zoom ??= (viewportController.maxZoom + viewportController.minZoom) / 2;
+    final node = _nodes[nodeID]!;
+    final pos =
+        node.position.toOffset() *
+        viewportController.zoom *
+        viewportController.scale;
+    final shift = viewportController.screenCenter - pos;
+    viewportController.setPan(shift);
+    if (zoom > viewportController.zoom) {
+      viewportController.applyZoom(zoom);
+    }
+  }
+
+  void unselectNode(String nodeID) {
+    final node = _nodes[nodeID]!;
+    node.selected = false;
+  }
+
   void toggleSelectNode(String nodeID, {bool animateToCenterOnSelect = true}) {
     final node = _nodes[nodeID]!;
     node.selected = !node.selected;
@@ -434,16 +453,16 @@ class ForceGraphController extends ChangeNotifier {
         e.key,
         this,
         position: e.value,
-        minimumSpacing: _graphBuilder.minimumSpacing,
         linearDamping: 2.5,
         enableNodesAutoMove: enableNodesAutoMove,
       );
       _nodes[e.key.id] = body;
     }
-
+    double minSpacing = double.infinity;
     for (final edge in _graphBuilder.edges) {
       try {
         final (nodeA, nodeB) = _getBodyPair(edge);
+
         final jointDef = DistanceJointDef()
           ..initialize(nodeA, nodeB, nodeA.position, nodeB.position)
           ..frequencyHz = jointFrequency
@@ -452,10 +471,16 @@ class ForceGraphController extends ChangeNotifier {
         jointDef.userData = edge;
         final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
         _joints[e.data.iD] = e;
+
+        minSpacing = min(minSpacing, e.joint.distance);
         world.createJoint(e.joint);
       } catch (e) {
         debugPrint('Error creating joint for edge $edge: $e');
       }
+    }
+    final shape = CircleShape(radius: minSpacing / 2);
+    for (final node in _nodes.values) {
+      node.body.createFixtureFromShape(shape);
     }
   }
 
@@ -497,7 +522,9 @@ class ForceGraphController extends ChangeNotifier {
   bool get isDraggingNode => _isDraggingNode;
   bool get isSelecting => _selectionStart != null;
   bool get isPanning => _controlKeyPressed;
-  bool get _controlKeyPressed => HardwareKeyboard.instance.isControlPressed;
+  bool get _controlKeyPressed => defaultTargetPlatform == TargetPlatform.macOS
+      ? HardwareKeyboard.instance.isMetaPressed
+      : HardwareKeyboard.instance.isControlPressed;
   MouseJoint? _mouseJoint;
 
   Rect? get worldSelectionRect {
@@ -624,6 +651,14 @@ class ForceGraphController extends ChangeNotifier {
   Timer? _scheduleAutoMove;
 }
 
+extension on Joint {
+  double get distance {
+    final p1 = bodyA.position;
+    final p2 = bodyB.position;
+    return p1.distanceTo(p2);
+  }
+}
+
 extension ForceGraphControllerControlsExtension on ForceGraphController {
   void onScaleStart(ScaleStartDetails details) {
     _scheduleAutoMove?.cancel();
@@ -664,12 +699,8 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
     _updateAutoMoveStatus();
   }
 
-  static bool get _isMac => defaultTargetPlatform == TargetPlatform.macOS;
-
   void onKeyEvent(KeyEvent event) {
-    final ctrlPressed = _isMac
-        ? HardwareKeyboard.instance.isMetaPressed
-        : _controlKeyPressed;
+    final ctrlPressed = _controlKeyPressed;
     const factor = 10.0;
     switch (event.physicalKey) {
       case PhysicalKeyboardKey.arrowUp:
@@ -1082,7 +1113,6 @@ class ForceGraphNode {
     ForceGraphNodeData node,
     ForceGraphController controller, {
     required Vector2 position,
-    double minimumSpacing = 0.4,
     double linearDamping = 3,
     bool enableNodesAutoMove = false,
   }) {
@@ -1096,8 +1126,6 @@ class ForceGraphNode {
 
     final body = world.createBody(nodeDef);
 
-    final shape = CircleShape(radius: max(minimumSpacing, node.radius));
-    body.createFixture(FixtureDef(shape, friction: 0.1));
     // body.setMassData(MassData()..mass = .1 * node.edges.length);
     body.setMassData(_mass);
     body.linearDamping = linearDamping;
@@ -1194,6 +1222,10 @@ class ForceGraphNode {
     if (selected) {
       if (style.selectedColor != null) {
         paint.color = style.selectedColor!;
+      }
+    } else if (hovered) {
+      if (style.hoverColor != null) {
+        paint.color = style.hoverColor!;
       }
     }
     if (hasBorder) {

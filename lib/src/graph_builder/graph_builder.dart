@@ -14,20 +14,17 @@ import 'package:forge2d/forge2d.dart';
 class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
   @override
   // ignore: overridden_fields
-  double minimumSpacing;
-  double maximumSpacing;
+  double minDistance;
+  double maxDistance;
   double tolerance;
   DistanceGraphBuilder({
-    required this.minimumSpacing,
-    required this.maximumSpacing,
+    required this.minDistance,
+    required this.maxDistance,
     this.tolerance = 1e-3,
 
     super.debugLogs,
-  }) : assert(
-         minimumSpacing < maximumSpacing,
-         'minimumSpacing < maximumSpacing',
-       ),
-       assert(minimumSpacing > 0, 'minimumSpacing > 0');
+  }) : assert(minDistance < maxDistance, 'minDistance < maxDistance'),
+       assert(minDistance > 0, 'minDistance > 0');
 
   @override
   IsolateManager createIsolate() {
@@ -66,8 +63,8 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
     }
     final inputData = <String, dynamic>{
       'nodes': nodesJSON,
-      'minimumSpacing': minimumSpacing,
-      'maximumSpacing': maximumSpacing,
+      'minDistance': minDistance,
+      'maxDistance': maxDistance,
       'tolerance': tolerance,
     };
 
@@ -100,10 +97,12 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
   int iterations;
   double repulsion;
   double attraction;
+  int correctionIterations;
   SpringEmbedderGraphBuilder({
-    required this.iterations,
+    this.iterations = 500,
     required this.repulsion,
     required this.attraction,
+    this.correctionIterations = 500,
     super.debugLogs,
   }) : assert(iterations > 0, 'iterations must be greater than 0'),
        assert(repulsion > 0, 'repulsion must be greater than 0'),
@@ -179,15 +178,10 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
       final value = e.value as Map;
       _positions[iD] = Vector2(value['x'], value['y']);
     }
-
-    final minimumSpacing = result['minimumSpacing'] as double;
-    if (minimumSpacing.isFinite) {
-      this.minimumSpacing = minimumSpacing;
-    }
   }
 
   @override
-  int? get totalStep => iterations;
+  int? get totalStep => iterations + correctionIterations;
 }
 
 class MDSGraphBuilder extends ForceDirectedGraphBuilder {
@@ -256,11 +250,6 @@ class MDSGraphBuilder extends ForceDirectedGraphBuilder {
       final iD = e.key as String;
       final value = e.value as Map;
       _positions[iD] = Vector2(value['x'], value['y']);
-    }
-
-    final minimumSpacing = result['minimumSpacing'] as double;
-    if (minimumSpacing.isFinite) {
-      this.minimumSpacing = minimumSpacing;
     }
   }
 
@@ -338,6 +327,4 @@ abstract class ForceDirectedGraphBuilder {
     }
     return UnmodifiableMapView(result);
   }
-
-  double minimumSpacing = 5;
 }

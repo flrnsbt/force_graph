@@ -15,10 +15,47 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final attraction = unwrappedInput['attraction'] as double;
       final width = unwrappedInput['width'] as double;
       final height = unwrappedInput['height'] as double;
-      final positions = <String, Point>{};
+      final positions = <String, Point<double>>{};
       final edges = <ForceGraphEdgeDataMap>{};
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
+      final int correctionIteration =
+          unwrappedInput['correctionIteration'] as int;
+      final correctionFactor = unwrappedInput['correctionFactor'] as double;
+      double similarityToDistance(num similarity) {
+        const minDist = 2.0;
+        final maxDist = 25;
+
+        similarity = similarity.clamp(0.0001, 1.0);
+        return maxDist - similarity * (maxDist - minDist);
+      }
+
+      void correctEdgeDistances(
+        Map<String, Point<double>> positions,
+        Set<ForceGraphEdgeDataMap> edges,
+      ) {
+        for (int i = 0; i < correctionIteration; i++) {
+          for (final edge in edges) {
+            final a = positions[edge.source]!;
+            final b = positions[edge.target]!;
+
+            final dx = b.x - a.x;
+            final dy = b.y - a.y;
+            final dist = sqrt(dx * dx + dy * dy);
+            if (dist == 0) continue;
+            final distance = similarityToDistance(edge.similarity);
+            final diff = distance - dist;
+            final ratio = (diff / dist) * correctionFactor;
+
+            final offsetX = dx * ratio / 2;
+            final offsetY = dy * ratio / 2;
+
+            positions[edge.source] = Point(a.x - offsetX, a.y - offsetY);
+            positions[edge.target] = Point(b.x + offsetX, b.y + offsetY);
+          }
+          controller.sendResult(ImMap.wrap({'progress': i + iterations}));
+        }
+      }
 
       if (rawNodes is Iterable) {
         for (final n in rawNodes) {
@@ -31,15 +68,6 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
             edges.add(edge);
           }
         }
-      }
-
-      double minimumSpacing = double.infinity;
-      double similarityToDistance(num similarity) {
-        const minDist = 0.5;
-        final maxDist = 25;
-
-        similarity = similarity.clamp(0.0001, 1.0);
-        return maxDist - similarity * (maxDist - minDist);
       }
 
       for (int i = 0; i < iterations; i++) {
@@ -84,9 +112,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
           var dy = source.y - target.y;
           var dist = sqrt(dx * dx + dy * dy) + 0.01;
           final edgeLength = similarityToDistance(edge.similarity);
-          if (minimumSpacing > edgeLength) {
-            minimumSpacing = edgeLength;
-          }
+
           var force = attraction * (dist - edgeLength);
 
           var fx = dx / dist * force;
@@ -109,13 +135,13 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         }
         controller.sendResult(ImMap.wrap({'progress': i}));
       }
+      correctEdgeDistances(positions, edges);
       return ImMap.wrap({
         'positions': {
           for (final e in positions.entries)
             e.key: {'x': e.value.x, 'y': e.value.y},
         },
         'final': true,
-        'minimumSpacing': minimumSpacing,
       });
     },
   );

@@ -99,23 +99,24 @@ class GraphComponentStyle {
     Color? selectedColorBorder,
     Color? colorBorder,
     double borderWidth = 0.075,
+    Color? hoverColor,
   }) {
-    return GraphComponentStyle(
-      light: GraphComponentStyleElement(
+    return GraphComponentStyle.fromGraphComponentStyleElement(
+      GraphComponentStyleElement(
         color: color,
         selectedColor: selectedColor,
         selectedColorBorder: selectedColorBorder,
         colorBorder: colorBorder,
         borderWidth: borderWidth,
-      ),
-      dark: GraphComponentStyleElement(
-        color: color,
-        selectedColor: selectedColor,
-        selectedColorBorder: selectedColorBorder,
-        colorBorder: colorBorder,
-        borderWidth: borderWidth,
+        hoverColor: hoverColor,
       ),
     );
+  }
+
+  factory GraphComponentStyle.fromGraphComponentStyleElement(
+    GraphComponentStyleElement element,
+  ) {
+    return GraphComponentStyle(light: element, dark: element);
   }
 
   static const none = GraphComponentStyle();
@@ -123,6 +124,16 @@ class GraphComponentStyle {
   GraphComponentStyleElement fromContext(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GraphComponentStyle &&
+          light == other.light &&
+          dark == other.dark;
+
+  @override
+  int get hashCode => light.hashCode ^ dark.hashCode;
 }
 
 class GraphComponentStyleElement {
@@ -131,16 +142,36 @@ class GraphComponentStyleElement {
   final Color? selectedColorBorder;
   final Color? colorBorder;
   final double borderWidth;
+  final Color? hoverColor;
   const GraphComponentStyleElement({
     this.color,
     this.selectedColor,
     this.selectedColorBorder,
     this.colorBorder,
+    this.hoverColor,
     this.borderWidth = 0.075,
   });
 
-}
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GraphComponentStyleElement &&
+          color == other.color &&
+          selectedColor == other.selectedColor &&
+          selectedColorBorder == other.selectedColorBorder &&
+          colorBorder == other.colorBorder &&
+          borderWidth == other.borderWidth &&
+          hoverColor == other.hoverColor;
 
+  @override
+  int get hashCode =>
+      color.hashCode ^
+      selectedColor.hashCode ^
+      selectedColorBorder.hashCode ^
+      colorBorder.hashCode ^
+      borderWidth.hashCode ^
+      hoverColor.hashCode;
+}
 
 class AnimateElement<T extends Object> {
   final T target;

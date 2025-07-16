@@ -37,8 +37,8 @@ void performDistanceLayoutIsolate(dynamic input) {
       final positions = <String, Point<double>>{};
       final edges = <ForceGraphEdgeDataMap>[];
       final rawNodes = unwrappedInput['nodes'];
-      final minimumSpacing = unwrappedInput['minimumSpacing'] as double;
-      final maximumSpacing = unwrappedInput['maximumSpacing'] as double;
+      final minDistance = unwrappedInput['minDistance'] as double;
+      final maxDistance = unwrappedInput['maxDistance'] as double;
       final tolerance = unwrappedInput['tolerance'] as double;
 
       if (rawNodes is Iterable) {
@@ -57,7 +57,7 @@ void performDistanceLayoutIsolate(dynamic input) {
         final first = edges.removeAt(0);
         positions[first.source] = const Point(0, 0);
         positions[first.target] = Point(
-          first.distance(minimumSpacing, maximumSpacing),
+          first.distance(minDistance, maxDistance),
           0,
         );
         placed.addAll([first.source, first.target]);
@@ -81,7 +81,7 @@ void performDistanceLayoutIsolate(dynamic input) {
               final knownId = sourcePlaced ? edge.source : edge.target;
               final unknownId = sourcePlaced ? edge.target : edge.source;
               final knownPos = positions[knownId]!;
-              final dist = edge.distance(minimumSpacing, maximumSpacing);
+              final dist = edge.distance(minDistance, maxDistance);
 
               final otherEdge = edges.firstWhere(
                 (e) =>
@@ -98,10 +98,7 @@ void performDistanceLayoutIsolate(dynamic input) {
                     ? otherEdge.target
                     : otherEdge.source;
                 final known2Pos = positions[known2Id]!;
-                final dist2 = otherEdge.distance(
-                  minimumSpacing,
-                  maximumSpacing,
-                );
+                final dist2 = otherEdge.distance(minDistance, maxDistance);
 
                 final points = _circleIntersections(
                   knownPos,
@@ -113,7 +110,7 @@ void performDistanceLayoutIsolate(dynamic input) {
                 if (points.isNotEmpty) {
                   final selected = points.firstWhere(
                     (p) => positions.values.every(
-                      (existing) => p.distanceTo(existing) > minimumSpacing,
+                      (existing) => p.distanceTo(existing) > minDistance,
                     ),
                     orElse: () => points.reduce((a, b) => a.y > b.y ? a : b),
                   );
@@ -140,7 +137,7 @@ void performDistanceLayoutIsolate(dynamic input) {
 
               final candidate = Point(knownPos.x, knownPos.y + dist);
               final hasCollision = positions.values.any(
-                (existing) => candidate.distanceTo(existing) < minimumSpacing,
+                (existing) => candidate.distanceTo(existing) < minDistance,
               );
               positions[unknownId] = hasCollision
                   ? Point(knownPos.x + dist, knownPos.y)
@@ -163,7 +160,7 @@ void performDistanceLayoutIsolate(dynamic input) {
             e.key: {'x': e.value.x.toDouble(), 'y': e.value.y.toDouble()},
         },
         'final': true,
-        'minimumSpacing': minimumSpacing,
+        'minimumSpacing': minDistance,
       });
     },
   );
