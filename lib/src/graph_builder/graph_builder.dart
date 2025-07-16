@@ -23,7 +23,11 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
     this.tolerance = 1e-3,
 
     super.debugLogs,
-  });
+  }) : assert(
+         minimumSpacing < maximumSpacing,
+         'minimumSpacing < maximumSpacing',
+       ),
+       assert(minimumSpacing > 0, 'minimumSpacing > 0');
 
   @override
   IsolateManager createIsolate() {
@@ -101,7 +105,13 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
     required this.repulsion,
     required this.attraction,
     super.debugLogs,
-  });
+  }) : assert(iterations > 0, 'iterations must be greater than 0'),
+       assert(repulsion > 0, 'repulsion must be greater than 0'),
+       assert(attraction > 0, 'attraction must be greater than 0'),
+       assert(
+         repulsion > attraction,
+         'repulsion must be greater than attraction',
+       );
 
   @override
   IsolateManager createIsolate() {
@@ -189,7 +199,13 @@ class MDSGraphBuilder extends ForceDirectedGraphBuilder {
     required this.repulsion,
     required this.attraction,
     super.debugLogs,
-  });
+  }) : assert(iterations > 0, 'iterations must be greater than 0'),
+       assert(repulsion > 0, 'repulsion must be greater than 0'),
+       assert(attraction > 0, 'attraction must be greater than 0'),
+       assert(
+         repulsion > attraction,
+         'repulsion must be greater than attraction',
+       );
 
   @override
   Future<void> $_performLayout(

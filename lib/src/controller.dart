@@ -14,7 +14,6 @@ import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/graph_builder/graph_builder.dart';
 import 'package:forge2d/forge2d.dart';
 
-
 class ForceGraphController extends ChangeNotifier {
   final ViewportController viewportController;
 
@@ -30,12 +29,17 @@ class ForceGraphController extends ChangeNotifier {
 
   final LinkedHashSet<String> _selectedNodeIds = LinkedHashSet();
 
+  final double jointDamping;
+  final double jointFrequency;
+
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
     this.enableSelection = true,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
+    this.jointDamping = 1,
+    this.jointFrequency = 1,
     this.uniformEdgeWeight = false,
     ForceDirectedGraphBuilder? graphBuilder,
     this.enableAutoCenterOnNodeSelection = true,
@@ -173,9 +177,7 @@ class ForceGraphController extends ChangeNotifier {
       }
     } else {
       notifyListeners();
-
     }
- 
   }
 
   void clearNodeForces() {
@@ -246,7 +248,7 @@ class ForceGraphController extends ChangeNotifier {
           notifyListeners();
         }
         await _loadData(_rawData);
-   
+
         _startTicker();
       }
       if (_completer != null && _completer!.isCompleted == false) {
@@ -444,8 +446,8 @@ class ForceGraphController extends ChangeNotifier {
         final (nodeA, nodeB) = _getBodyPair(edge);
         final jointDef = DistanceJointDef()
           ..initialize(nodeA, nodeB, nodeA.position, nodeB.position)
-          ..frequencyHz = 2
-          ..dampingRatio = 0.7;
+          ..frequencyHz = jointFrequency
+          ..dampingRatio = jointDamping;
 
         jointDef.userData = edge;
         final e = ForceGraphEdge(DistanceJoint(jointDef), edge, this);
