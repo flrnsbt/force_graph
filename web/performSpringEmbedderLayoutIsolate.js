@@ -3187,45 +3187,46 @@ v(a,b){if(b==null)return!1
 return b instanceof A.K&&this.a===b.a&&this.b===b.b},
 gp(a){return A.f0(B.d.gp(this.a),B.d.gp(this.b),0)}}
 A.e2.prototype={
-$2(d0,d1){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6=t.K,b7=d1.gH().bt(0,b6,b6),b8=b7.a,b9=b7.$ti.h("4?"),c0=A.fk(b9.a(b8.j(0,"iterations"))),c1=A.cw(b9.a(b8.j(0,"repulsion"))),c2=A.cw(b9.a(b8.j(0,"attraction"))),c3=A.cw(b9.a(b8.j(0,"width"))),c4=A.cw(b9.a(b8.j(0,"height"))),c5=t.N,c6=t.x,c7=A.ba(c5,c6),c8=A.hj(t.G),c9=b9.a(b8.j(0,"nodes"))
-if(t.R.b(c9))for(b8=J.bL(c9),b9=t.z;b8.k();){s=A.hi(b8.gm(),b9,b9)
-c7.u(0,A.bH(s.j(0,"id")),new A.K(B.i.aX()*c3,B.i.aX()*c4,c6))
-for(r=A.h7(s),q=r.length,p=0;p<r.length;r.length===q||(0,A.fL)(r),++p)c8.G(0,r[p])}o=new A.e3()
-for(b8=t.S,b9=t.o,r=d0.a.a,q=c7.$ti,n=q.h("a5<1,2>"),m=c8.$ti,l=m.h("a8<1>"),k=t.U,m=m.c,j=q.h("ay<1>"),i=1/0,h=0;h<c0;++h){g=A.ba(c5,k)
-for(f=new A.ay(c7,c7.r,c7.e,j);f.k();)g.u(0,f.d,B.D)
-for(f=new A.a5(c7,c7.r,c7.e,n);f.k();){e=f.d
-for(d=new A.a5(c7,c7.r,c7.e,n),c=e.b,b=e.a,a=J.ab(b);d.k();){a0=d.d
+$2(d1,d2){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,b0,b1,b2,b3,b4,b5,b6="Invalid Edge: couldn't find node ",b7=t.K,b8=d2.gH().bt(0,b7,b7),b9=b8.a,c0=b8.$ti.h("4?"),c1=A.fk(c0.a(b9.j(0,"iterations"))),c2=A.cw(c0.a(b9.j(0,"repulsion"))),c3=A.cw(c0.a(b9.j(0,"attraction"))),c4=A.cw(c0.a(b9.j(0,"width"))),c5=A.cw(c0.a(b9.j(0,"height"))),c6=t.N,c7=t.x,c8=A.ba(c6,c7),c9=A.hj(t.G),d0=c0.a(b9.j(0,"nodes"))
+if(t.R.b(d0))for(b9=J.bL(d0),c0=t.z;b9.k();){s=A.hi(b9.gm(),c0,c0)
+c8.u(0,A.bH(s.j(0,"id")),new A.K(B.i.aX()*c4,B.i.aX()*c5,c7))
+for(r=A.h7(s),q=r.length,p=0;p<r.length;r.length===q||(0,A.fL)(r),++p)c9.G(0,r[p])}o=new A.e3()
+for(b9=t.S,c0=t.o,r=d1.a.a,q=c8.$ti,n=q.h("a5<1,2>"),m=c9.$ti,l=m.h("a8<1>"),k=t.U,m=m.c,j=q.h("ay<1>"),i=1/0,h=0;h<c1;++h){g=A.ba(c6,k)
+for(f=new A.ay(c8,c8.r,c8.e,j);f.k();)g.u(0,f.d,B.D)
+for(f=new A.a5(c8,c8.r,c8.e,n);f.k();){e=f.d
+for(d=new A.a5(c8,c8.r,c8.e,n),c=e.b,b=e.a,a=J.ab(b);d.k();){a0=d.d
 if(a.v(b,a0.a))continue
 a1=c.a
 a2=a0.b
 a3=a1-a2.a
 a4=c.b-a2.b
 a5=Math.sqrt(a3*a3+a4*a4)+0.01
-a6=c1/(a5*a5)
-g.u(0,b,new A.K(g.j(0,b).a+a3/a5*a6,g.j(0,b).b+a4/a5*a6,k))}}for(f=new A.a8(c8,c8.r,l),f.c=c8.e;f.k();){d=f.d
+a6=c2/(a5*a5)
+g.u(0,b,new A.K(g.j(0,b).a+a3/a5*a6,g.j(0,b).b+a4/a5*a6,k))}}for(f=new A.a8(c9,c9.r,l),f.c=c9.e;f.k();){d=f.d
 if(d==null)d=m.a(d)
 a7=A.bH(d.j(0,"source"))
 a8=A.bH(d.j(0,"target"))
-a9=c7.j(0,a7)
-b0=c7.j(0,a8)
-if(a9==null||b0==null)continue
+a9=c8.j(0,a7)
+b0=c8.j(0,a8)
+if(a9==null)throw A.d(b6+a7)
+if(b0==null)throw A.d(b6+a8)
 a3=a9.a-b0.a
 a4=a9.b-b0.b
 a5=Math.sqrt(a3*a3+a4*a4)+0.01
 b1=o.$1(A.fl(d.j(0,"similarity")))
 if(i>b1)i=b1
-a6=c2*(a5-b1)
+a6=c3*(a5-b1)
 b2=a3/a5*a6
 b3=a4/a5*a6
 g.u(0,a7,new A.K(g.j(0,a7).a-b2,g.j(0,a7).b-b3,k))
-g.u(0,a8,new A.K(g.j(0,a8).a+b2,g.j(0,a8).b+b3,k))}for(f=new A.a5(c7,c7.r,c7.e,n);f.k();){b4=f.d
+g.u(0,a8,new A.K(g.j(0,a8).a+b2,g.j(0,a8).b+b3,k))}for(f=new A.a5(c8,c8.r,c8.e,n);f.k();){b4=f.d
 s=b4.b
 b5=b4.a
-c7.u(0,b5,new A.K(s.a+g.j(0,b5).a,s.b+g.j(0,b5).b,c6))}r.S(A.aw(A.P(["progress",h],c5,b8),b9))}b8=A.ba(c5,t.t)
-for(c6=new A.V(c7,q.h("V<1,2>")).gn(0),r=t.n;c6.k();){b4=c6.d
+c8.u(0,b5,new A.K(s.a+g.j(0,b5).a,s.b+g.j(0,b5).b,c7))}r.S(A.aw(A.P(["progress",h],c6,b9),c0))}b9=A.ba(c6,t.t)
+for(c7=new A.V(c8,q.h("V<1,2>")).gn(0),r=t.n;c7.k();){b4=c7.d
 q=b4.a
 n=b4.b
-b8.u(0,q,A.P(["x",n.a,"y",n.b],c5,r))}return A.aw(A.P(["positions",b8,"final",!0,"minimumSpacing",i],c5,b6),b9)},
+b9.u(0,q,A.P(["x",n.a,"y",n.b],c6,r))}return A.aw(A.P(["positions",b9,"final",!0,"minimumSpacing",i],c6,b7),c0)},
 $S:17}
 A.e3.prototype={
 $1(a){return 25-B.d.bu(a,0.0001,1)*24.5},

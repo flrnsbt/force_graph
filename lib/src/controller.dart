@@ -14,7 +14,6 @@ import 'package:force_graph/src/extension.dart';
 import 'package:force_graph/src/graph_builder/graph_builder.dart';
 import 'package:forge2d/forge2d.dart';
 
-export 'package:force_graph/src/graph_builder/graph_builder.dart';
 
 class ForceGraphController extends ChangeNotifier {
   final ViewportController viewportController;
@@ -38,10 +37,7 @@ class ForceGraphController extends ChangeNotifier {
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
     this.uniformEdgeWeight = false,
-    AlgorithmType algorithmType = AlgorithmType.springEmbedder,
-    int forceDirectedGraphLayoutIteration = 800,
-    double forceDirectedGraphLayoutRepulse = 10,
-    double forceDirectedGraphLayoutAttraction = 0.1,
+    ForceDirectedGraphBuilder? graphBuilder,
     this.enableAutoCenterOnNodeSelection = true,
     this.edgeHightlightColor,
     this.edgeHiddenOpacity,
@@ -56,13 +52,14 @@ class ForceGraphController extends ChangeNotifier {
          minZoom: minZoom,
          maxZoom: maxZoom,
        ),
-       _graphBuilder = ForceDirectedGraphBuilder(
-         debugLogs: graphBuilderDebugLogs,
-         iterations: forceDirectedGraphLayoutIteration,
-         repulsion: forceDirectedGraphLayoutRepulse,
-         algorithmType: algorithmType,
-         attraction: forceDirectedGraphLayoutAttraction,
-       ) {
+       _graphBuilder =
+           graphBuilder ??
+           SpringEmbedderGraphBuilder(
+             debugLogs: graphBuilderDebugLogs,
+             iterations: 800,
+             repulsion: 10,
+             attraction: 0.1,
+           ) {
     world.destroyListener = _DestroyListener(this);
     // world.setContactListener(_ContactListener(this));
     if (nodes.isNotEmpty) {
@@ -70,16 +67,8 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void updateForceDirectedGraphLayoutRepulse(double value) {
-    _graphBuilder.repulsion = value;
-  }
-
-  void updateForceDirectedGraphLayoutAttraction(double value) {
-    _graphBuilder.attraction = value;
-  }
-
-  void updateAlgorithmType(AlgorithmType algorithmType) {
-    _graphBuilder.algorithmType = algorithmType;
+  void updateGraphBuilder(ForceDirectedGraphBuilder graphBuilder) {
+    _graphBuilder = graphBuilder;
   }
 
   int? maxSelection = 1;
@@ -177,7 +166,16 @@ class ForceGraphController extends ChangeNotifier {
       node.update(dt, eMs);
     }
 
-    notifyListeners();
+    if (!_isReady) {
+      if (_graphBuilder.ensureReady(dt, this)) {
+        _isReady = true;
+        _isReadyCallback();
+      }
+    } else {
+      notifyListeners();
+
+    }
+ 
   }
 
   void clearNodeForces() {
@@ -201,11 +199,6 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void unselectNode(String nodeID) {
-    final node = _nodes[nodeID]!;
-    node.selected = false;
-  }
-
   void toggleSelectNode(String nodeID, {bool animateToCenterOnSelect = true}) {
     final node = _nodes[nodeID]!;
     node.selected = !node.selected;
@@ -216,8 +209,7 @@ class ForceGraphController extends ChangeNotifier {
 
   void selectNodes(Iterable<String> nodeIDs) {
     for (final nodeID in nodeIDs) {
-      final node = _nodes[nodeID]!;
-      node.selected = true;
+      selectNode(nodeID, animateToCenter: false);
     }
   }
 
@@ -245,7 +237,7 @@ class ForceGraphController extends ChangeNotifier {
       _error = null;
       _ticker?.stop();
       _loadingProgressStep = 0;
-      _loadingTotalStep = _graphBuilder.iterations;
+      _loadingTotalStep = _graphBuilder.totalStep;
 
       if (_rawData.isNotEmpty) {
         if (notifyReadyStatusChange) {
@@ -254,8 +246,7 @@ class ForceGraphController extends ChangeNotifier {
           notifyListeners();
         }
         await _loadData(_rawData);
-        _isReady = true;
-        _isReadyCallback();
+   
         _startTicker();
       }
       if (_completer != null && _completer!.isCompleted == false) {
@@ -278,10 +269,13 @@ class ForceGraphController extends ChangeNotifier {
   int _loadingProgressStep = 0;
   int get loadingProgressStep => _loadingProgressStep;
 
-  int _loadingTotalStep = 0;
-  int get loadingTotalStep => _loadingTotalStep;
+  int? _loadingTotalStep = 0;
+  int? get loadingTotalStep => _loadingTotalStep;
 
-  double get loadingProgress => _loadingProgressStep / _loadingTotalStep;
+  double? get loadingProgress {
+    if (_loadingTotalStep == null) return null;
+    return _loadingProgressStep / _loadingTotalStep!;
+  }
 
   Future<void> reload() {
     return _init();
@@ -414,7 +408,7 @@ class ForceGraphController extends ChangeNotifier {
     return _completer!.future.whenComplete(() => null);
   }
 
-  final ForceDirectedGraphBuilder _graphBuilder;
+  ForceDirectedGraphBuilder _graphBuilder;
 
   double? nodeHiddenOpacity;
 
@@ -1273,6 +1267,13 @@ class ForceGraphNode {
   static final Vector2 _forceStrength = Vector2(0.01, .01);
 
   double _opacity = 1;
+
+  bool moving([double tolerance = 0.1]) {
+    final velocity = body.linearVelocity;
+    final vX = velocity.x.abs();
+    final vY = velocity.y.abs();
+    return vX > tolerance || vY > tolerance;
+  }
 
   Vector2 _getDirection(_ForceDirection direction) {
     switch (direction) {

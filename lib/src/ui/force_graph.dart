@@ -46,22 +46,23 @@ class ForceGraphWidget extends StatefulWidget {
   final void Function(List<ForceGraphNode>)? onSelectionChanged;
   final Widget Function(
     BuildContext context,
-    int progressStep,
-    int total,
-    double progress,
+    int? progressStep,
+    int? total,
+    double? progress,
   )?
   loadingBuilder;
   final Widget Function(BuildContext context, Object error) errorBuilder;
 
   static Widget _kDefaultLoadingBuilder(
     BuildContext context,
-    int progressStep,
-    int total,
-    double progress,
+    int? progressStep,
+    int? total,
+    double? progress,
   ) => SafeArea(
     child: Column(
       children: [
-        if (progress.isFinite) LinearProgressIndicator(value: progress),
+        if (progress == null || progress.isFinite)
+          LinearProgressIndicator(value: progress),
         Expanded(child: Center(child: Text('Loading...'))),
       ],
     ),

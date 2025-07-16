@@ -65,7 +65,6 @@ class TestPage extends StatelessWidget {
       body: ForceGraphWidget(
         controller: ForceGraphController(
           nodes: mockGraphNodes,
-          forceDirectedGraphLayoutIteration: 1000,
           uniformEdgeWeight: true,
         ),
         edgeTooltipBuilder: (context, edge) {

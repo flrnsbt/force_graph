@@ -1,6 +1,6 @@
 name: force_graph
 description: "Forge2D based force graph"
-version: 0.1.8
+version: 0.1.9
 homepage: https://github.com/flrnsbt/force_graph
 
 environment:
@@ -24,3 +24,4 @@ flutter:
   assets: 
     - web/performMDSLayoutIsolate.js
     - web/performSpringEmbedderLayoutIsolate.js
+    - web/performDistanceLayoutIsolate.js
