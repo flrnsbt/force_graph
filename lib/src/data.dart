@@ -86,12 +86,52 @@ class ForceGraphEdgeData {
 }
 
 class GraphComponentStyle {
+  final GraphComponentStyleElement light;
+  final GraphComponentStyleElement dark;
+  const GraphComponentStyle({
+    this.light = const GraphComponentStyleElement(),
+    this.dark = const GraphComponentStyleElement(),
+  });
+
+  factory GraphComponentStyle.from({
+    Color? color,
+    Color? selectedColor,
+    Color? selectedColorBorder,
+    Color? colorBorder,
+    double borderWidth = 0.075,
+  }) {
+    return GraphComponentStyle(
+      light: GraphComponentStyleElement(
+        color: color,
+        selectedColor: selectedColor,
+        selectedColorBorder: selectedColorBorder,
+        colorBorder: colorBorder,
+        borderWidth: borderWidth,
+      ),
+      dark: GraphComponentStyleElement(
+        color: color,
+        selectedColor: selectedColor,
+        selectedColorBorder: selectedColorBorder,
+        colorBorder: colorBorder,
+        borderWidth: borderWidth,
+      ),
+    );
+  }
+
+  static const none = GraphComponentStyle();
+
+  GraphComponentStyleElement fromContext(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
+  }
+}
+
+class GraphComponentStyleElement {
   final Color? color;
   final Color? selectedColor;
   final Color? selectedColorBorder;
   final Color? colorBorder;
   final double borderWidth;
-  const GraphComponentStyle({
+  const GraphComponentStyleElement({
     this.color,
     this.selectedColor,
     this.selectedColorBorder,
@@ -99,8 +139,8 @@ class GraphComponentStyle {
     this.borderWidth = 0.075,
   });
 
-  static const none = GraphComponentStyle();
 }
+
 
 class AnimateElement<T extends Object> {
   final T target;

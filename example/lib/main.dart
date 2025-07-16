@@ -123,7 +123,7 @@ List<ForceGraphNodeData> generateMockGraph({
       ForceGraphNodeData.from(
         id: ids[i],
         title: 'Document ${i + 1}',
-        style: GraphComponentStyle(color: color),
+        style: GraphComponentStyle.from(color: color),
         edges: [],
       ),
     );
@@ -150,7 +150,7 @@ List<ForceGraphNodeData> generateMockGraph({
           target: targetId,
           similarity: similarity,
           weight: weight,
-          style: GraphComponentStyle(
+          style: GraphComponentStyle.from(
             color: Colors.black.withValues(alpha: 0.2),
           ),
         ),

@@ -153,6 +153,8 @@ class _ControlBarState extends State<ControlBar> {
                     child: ZoomControllerWidget(
                       direction: widget.controlBarDirection,
                       zoom: viewportController.zoom,
+                      minZoom: viewportController.minZoom,
+                      maxZoom: viewportController.maxZoom,
                       onZoomChanged: (value, fromSlider, fromLongPress) {
                         if (fromSlider) {
                           viewportController.applyZoom(

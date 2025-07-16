@@ -46,9 +46,16 @@ class ForceGraphController extends ChangeNotifier {
     this.edgeHightlightColor,
     this.edgeHiddenOpacity,
     this.nodeHiddenOpacity,
-    double scale = 25,
-    double initialZoom = ViewportController.minZoom,
-  }) : viewportController = ViewportController(zoom: initialZoom, scale: scale),
+    double scale = 10,
+    double minZoom = 0.1,
+    double maxZoom = 2,
+    double? initialZoom,
+  }) : viewportController = ViewportController(
+         zoom: initialZoom,
+         scale: scale,
+         minZoom: minZoom,
+         maxZoom: maxZoom,
+       ),
        _graphBuilder = ForceDirectedGraphBuilder(
          debugLogs: graphBuilderDebugLogs,
          iterations: forceDirectedGraphLayoutIteration,
@@ -170,8 +177,6 @@ class ForceGraphController extends ChangeNotifier {
       node.update(dt, eMs);
     }
 
-   
-
     notifyListeners();
   }
 
@@ -193,6 +198,12 @@ class ForceGraphController extends ChangeNotifier {
     node.selected = true;
     if (animateToCenter) {
       node._animateCenter();
+    }
+  }
+
+  void selectNodes(Iterable<String> nodeIDs) {
+    for (final nodeID in nodeIDs) {
+      selectNode(nodeID, animateToCenter: false);
     }
   }
 
@@ -588,7 +599,6 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   Timer? _scheduleAutoMove;
-
 }
 
 extension ForceGraphControllerControlsExtension on ForceGraphController {
@@ -754,10 +764,13 @@ class ViewportController {
   final double initialZoom;
 
   ViewportController({
-    this.zoom = 0.1,
+    double? zoom,
+    this.maxZoom = 2,
+    this.minZoom = 0.1,
     this.panOffset = Offset.zero,
-    this.scale = 20.0,
-  }) : initialZoom = zoom;
+    this.scale = 10.0,
+  }) : initialZoom = zoom ?? minZoom,
+       zoom = zoom ?? minZoom;
 
   Size? _screenSize;
 
@@ -818,8 +831,8 @@ class ViewportController {
     );
   }
 
-  static const double minZoom = 0.1;
-  static const double maxZoom = 2.0;
+  final double minZoom;
+  final double maxZoom;
 
   void multiplyZoom(
     double scaleDelta, {
@@ -971,8 +984,6 @@ class ViewportController {
     _zoomAnimateElement = null;
     _panAnimateElement = null;
   }
-  
- 
 }
 
 class ForceGraphEdge {
@@ -994,12 +1005,14 @@ class ForceGraphEdge {
 
   ForceGraphEdge(this.joint, this.data, this._controller);
 
-  void draw(Canvas canvas) {
+  void draw(Canvas canvas, BuildContext context) {
+    final style = data.style.fromContext(context);
+
     final p1 = joint.bodyA.position.toOffset();
     final p2 = joint.bodyB.position.toOffset();
     final paint = Paint();
-    if (data.style.color != null) {
-      paint.color = data.style.color!;
+    if (style.color != null) {
+      paint.color = style.color!;
     }
     double weight = 0.5;
     if (!_controller.uniformEdgeWeight) {
@@ -1143,9 +1156,10 @@ class ForceGraphNode {
     }
   }
 
-  void draw(Canvas canvas) {
+  void draw(Canvas canvas, BuildContext context) {
+    final style = data.style.fromContext(context);
     final pos = position.toOffset();
-    final paint = Paint()..color = data.style.color ?? Colors.blue;
+    final paint = Paint()..color = style.color ?? Colors.blue;
 
     double radius = data.radius;
 
@@ -1153,20 +1167,19 @@ class ForceGraphNode {
       radius *= 1.5;
     }
     final bool selected = this.selected;
-    bool hasBorder = selected || data.style.colorBorder != null;
+    bool hasBorder = selected || style.colorBorder != null;
     if (selected) {
-      if (data.style.selectedColor != null) {
-        paint.color = data.style.selectedColor!;
+      if (style.selectedColor != null) {
+        paint.color = style.selectedColor!;
       }
     }
     if (hasBorder) {
       final newPaint = Paint.from(paint);
-      newPaint.strokeWidth = data.style.borderWidth;
+      newPaint.strokeWidth = style.borderWidth;
       newPaint.style = PaintingStyle.stroke;
       newPaint.color =
           (selected
-              ? data.style.selectedColorBorder
-              : data.style.colorBorder) ??
+              ? style.selectedColorBorder : style.colorBorder) ??
           Colors.redAccent;
 
       canvas.drawCircle(pos, radius, newPaint);

@@ -182,6 +182,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
               ..scale(zoomScale, zoomScale);
             canvas.transform(matrix.storage);
           },
+          context
        
         ),
       ),
@@ -380,12 +381,14 @@ class GraphPainter extends CustomPainter {
   final Iterable<ForceGraphEdge> joints;
   final ValueChanged<Size> onCanvasSizeChanged;
   final void Function(Canvas canvas) transform;
+  final BuildContext context;
 
   GraphPainter(
     this.nodes,
     this.joints,
     this.onCanvasSizeChanged,
     this.transform,
+    this.context,
   );
 
   Size? _oldSize;
@@ -399,11 +402,11 @@ class GraphPainter extends CustomPainter {
     transform(canvas);
 
     for (final joint in joints) {
-      joint.draw(canvas);
+      joint.draw(canvas, context);
     }
 
     for (final node in nodes) {
-      node.draw(canvas);
+      node.draw(canvas, context);
     }
 
     
