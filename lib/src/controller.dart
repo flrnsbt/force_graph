@@ -201,9 +201,36 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void unselectNode(String nodeID) {
+    final node = _nodes[nodeID]!;
+    node.selected = false;
+  }
+
+  void toggleSelectNode(String nodeID, {bool animateToCenterOnSelect = true}) {
+    final node = _nodes[nodeID]!;
+    node.selected = !node.selected;
+    if (animateToCenterOnSelect && node.selected) {
+      node._animateCenter();
+    }
+  }
+
   void selectNodes(Iterable<String> nodeIDs) {
     for (final nodeID in nodeIDs) {
-      selectNode(nodeID, animateToCenter: false);
+      final node = _nodes[nodeID]!;
+      node.selected = true;
+    }
+  }
+
+  void toggleSelectNodes(Iterable<String> nodeIDs) {
+    for (final nodeID in nodeIDs) {
+      toggleSelectNode(nodeID, animateToCenterOnSelect: false);
+    }
+  }
+
+  void unselectNodes(Iterable<String> nodeIDs) {
+    for (final nodeID in nodeIDs) {
+      final node = _nodes[nodeID]!;
+      node.selected = false;
     }
   }
 
@@ -1178,8 +1205,7 @@ class ForceGraphNode {
       newPaint.strokeWidth = style.borderWidth;
       newPaint.style = PaintingStyle.stroke;
       newPaint.color =
-          (selected
-              ? style.selectedColorBorder : style.colorBorder) ??
+          (selected ? style.selectedColorBorder : style.colorBorder) ??
           Colors.redAccent;
 
       canvas.drawCircle(pos, radius, newPaint);
