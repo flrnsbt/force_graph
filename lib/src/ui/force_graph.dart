@@ -34,7 +34,7 @@ class ForceGraphWidget extends StatefulWidget {
   final Color? selectionOverlayColor;
   final ForceGraphController controller;
   final bool showControlBar;
-  
+
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
   final Offset Function(Offset position)? offsetUpdater;

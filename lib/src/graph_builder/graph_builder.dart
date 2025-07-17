@@ -155,7 +155,7 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
       'repulsion': repulsion,
       'attraction': attraction,
       'correctionIterations': correctionIterations,
-      'correctionFactor': correctionFactor
+      'correctionFactor': correctionFactor,
     };
 
     final Map result = await isolate.compute(
