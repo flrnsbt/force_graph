@@ -23,6 +23,8 @@ class ForceGraphWidget extends StatefulWidget {
     this.customControlBarBuilder,
     this.focusNode,
     this.onSelectionChanged,
+    this.defaultControlBarAutoHide,
+    this.defaultControlBarOpacityChangesEnabled = true,
     this.selectionOverlayColor,
     Widget Function(BuildContext context, Object error)? errorBuilder,
     this.loadingBuilder = _kDefaultLoadingBuilder,
@@ -51,6 +53,8 @@ class ForceGraphWidget extends StatefulWidget {
     double? progress,
   )?
   loadingBuilder;
+  final bool? defaultControlBarAutoHide;
+  final bool defaultControlBarOpacityChangesEnabled;
   final Widget Function(BuildContext context, Object error) errorBuilder;
 
   static Widget _kDefaultLoadingBuilder(
@@ -121,16 +125,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
   }
 
-
-
- 
-
- 
-
-
-
- 
-
   MouseCursor getCursor() {
     if (widget.controller.isSelecting) {
       return SystemMouseCursors.click;
@@ -146,12 +140,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
     return SystemMouseCursors.basic;
   }
-
-
-  
-
-
- 
 
   @override
   Widget build(BuildContext context) {
@@ -183,8 +171,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
               ..scale(zoomScale, zoomScale);
             canvas.transform(matrix.storage);
           },
-          context
-       
+          context,
         ),
       ),
     );
@@ -259,7 +246,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     final direction =
         widget.controlBarDirection ??
         (moreHeightThanWidth ? Axis.horizontal : Axis.vertical);
-    final bool enableAutoHide = smallScreen;
+    final bool enableAutoHide = widget.defaultControlBarAutoHide ?? smallScreen;
+    final bool opacityChanges = widget.defaultControlBarOpacityChangesEnabled;
     return [
       _buildTooltips(),
       if (widget.showControlBar)
@@ -277,6 +265,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
                   ControlBar(
                     enableAutoHide: enableAutoHide,
                     controller: widget.controller,
+                    enableOpacityChange: opacityChanges,
                     controlBarSpacing: widget.controlBarSpacing,
                     controlBarAlignment: controlBarAlignment,
                     controlBarDirection: direction,
@@ -346,8 +335,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
     return const SizedBox.shrink();
   }
-
- 
 }
 
 class GraphForegroundPainter extends CustomPainter {
@@ -409,8 +396,6 @@ class GraphPainter extends CustomPainter {
     for (final node in nodes) {
       node.draw(canvas, context);
     }
-
-    
   }
 
   @override

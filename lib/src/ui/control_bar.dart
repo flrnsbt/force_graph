@@ -12,12 +12,14 @@ class ControlBar extends StatefulWidget {
     required this.controlBarDirection,
     required this.controlBarSpacing,
     this.enableAutoHide = true,
+    this.enableOpacityChange = true,
   });
   final ForceGraphController controller;
   final Alignment controlBarAlignment;
   final Axis controlBarDirection;
   final EdgeInsets controlBarSpacing;
   final bool enableAutoHide;
+  final bool enableOpacityChange;
 
   @override
   State<ControlBar> createState() => _ControlBarState();
@@ -40,6 +42,8 @@ class _ControlBarState extends State<ControlBar> {
   void _scheduleDisableControlBar([
     Duration duration = const Duration(seconds: 1),
   ]) {
+    if (!widget.enableOpacityChange) return;
+
     _scheduleDisable?.cancel();
     _scheduleDisable = Timer(duration, () {
       if (mounted && _opaque) {
@@ -88,13 +92,15 @@ class _ControlBarState extends State<ControlBar> {
         onTapUpOutside: (event) {
           _scheduleDisable?.cancel();
           _scheduleHide?.cancel();
-          _scheduleDisable = Timer(const Duration(milliseconds: 500), () {
-            if (mounted && !_opaque) {
-              setState(() {
-                _opaque = true;
-              });
-            }
-          });
+          if (widget.enableOpacityChange) {
+            _scheduleDisable = Timer(const Duration(milliseconds: 500), () {
+              if (mounted && !_opaque) {
+                setState(() {
+                  _opaque = true;
+                });
+              }
+            });
+          }
           if (widget.enableAutoHide) {
             _scheduleHide = Timer(const Duration(milliseconds: 500), () {
               if (mounted && _hidden) {
