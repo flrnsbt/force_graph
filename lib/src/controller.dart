@@ -773,7 +773,7 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
 
     if (node != null) {
       startDragging(node.body, worldTouch);
-    } else if (!isPanning) {
+    } else if (!isPanning && !isHovering) {
       startSelecting(worldTouch);
     }
     _updateAutoMoveStatus();
