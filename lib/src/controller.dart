@@ -391,6 +391,14 @@ class ForceGraphController extends ChangeNotifier {
 
   final __onSelectionChangeds = <void Function(List<ForceGraphNode>)>[];
 
+  final __onHovereds = <void Function(ForceGraphNode?)>[];
+
+  void _onHover(ForceGraphNode? node) {
+    for (final f in __onHovereds) {
+      f(node);
+    }
+  }
+
   void _onTap(ForceGraphNode node) {
     for (final f in __onTaps) {
       f(node);
@@ -402,6 +410,14 @@ class ForceGraphController extends ChangeNotifier {
     for (final f in __onSelectionChangeds) {
       f(s);
     }
+  }
+
+  void addOnHoverListener(void Function(ForceGraphNode?) onHover) {
+    __onHovereds.add(onHover);
+  }
+
+  void removeOnHoverListener(void Function(ForceGraphNode?) onHover) {
+    __onHovereds.remove(onHover);
   }
 
   void addOnSelectionChangedListener(
@@ -1201,7 +1217,16 @@ class ForceGraphNode {
     }
   }
 
-  bool hovered = false;
+  bool _hovered = false;
+
+  bool get hovered => _hovered;
+
+  set hovered(bool value) {
+    if (value != _hovered) {
+      _hovered = value;
+      _controller._onHover(value ? this : null);
+    }
+  }
 
   bool get selected => _controller._selectedNodeIds.contains(iD);
 
