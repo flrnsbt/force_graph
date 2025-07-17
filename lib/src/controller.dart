@@ -23,6 +23,8 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool enableAutoCenterOnNodeSelection;
 
+  final bool staticNodes;
+
   final bool uniformEdgeWeight;
 
   final bool enableSelection;
@@ -53,6 +55,7 @@ class ForceGraphController extends ChangeNotifier {
     this.enableSelection = true,
     double nodeLinearDamping = 2.5,
     this.nodeDragMaxForce,
+    this.staticNodes = false,
     this.nodeDragDamping = 1,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
@@ -1201,7 +1204,10 @@ class ForceGraphNode {
       throw 'Invalid position for node ${node.id}: $position';
     }
     final world = controller.world;
-    final nodeDef = BodyDef(type: BodyType.dynamic, position: position);
+    final nodeDef = BodyDef(
+      type: controller.staticNodes ? BodyType.static : BodyType.dynamic,
+      position: position,
+    );
 
     nodeDef.userData = node;
 
