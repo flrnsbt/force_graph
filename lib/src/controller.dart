@@ -975,7 +975,11 @@ class ViewportController {
     Curve curve = Curves.linear,
   }) {
     zoom = zoom.clamp(minZoom, maxZoom);
-    if (zoom == this.zoom) return;
+    if (zoom == this.zoom) {
+      _panAnimateElement?.cancel();
+      _zoomAnimateElement?.cancel();
+      return;
+    }
     focalPoint ??= screenCenter;
     final scale = zoom / this.zoom;
     final Offset newPanOffset = focalPoint - (focalPoint - panOffset) * scale;
