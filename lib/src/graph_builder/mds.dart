@@ -8,7 +8,6 @@ import 'package:isolate_manager/isolate_manager.dart';
 void performMDSLayoutIsolate(dynamic input) {
   IsolateManagerFunction.customFunction<ImMap, ImMap>(
     input,
-
     onEvent: (controller, ImMap input) {
       final unwrappedInput = input.toUnwrappedMap();
       final width = unwrappedInput['width'] as double;
@@ -19,6 +18,18 @@ void performMDSLayoutIsolate(dynamic input) {
       final forceIterations = unwrappedInput['iterations'] as int;
       final repulsion = unwrappedInput['repulsion'] as double;
       final attraction = unwrappedInput['attraction'] as double;
+
+      final preservedRaw = unwrappedInput['positionsToPreserve'] as Map?;
+      final positionsToPreserve = <String, Point<double>>{};
+      if (preservedRaw != null) {
+        for (final entry in preservedRaw.entries) {
+          final p = entry.value as Map;
+          positionsToPreserve[entry.key as String] = Point(
+            (p['x'] as num).toDouble(),
+            (p['y'] as num).toDouble(),
+          );
+        }
+      }
 
       final nodeList = <ForceGraphNodeDataMap>[];
       final nodeIds = <String>[];
@@ -64,6 +75,11 @@ void performMDSLayoutIsolate(dynamic input) {
 
       controller.sendResult(ImMap.wrap({'progress': 60}));
 
+      // Override with preserved positions
+      for (final entry in positionsToPreserve.entries) {
+        mdsPositions[entry.key] = entry.value;
+      }
+
       Map<String, Point> finalPositions;
 
       if (useHybrid) {
@@ -77,6 +93,7 @@ void performMDSLayoutIsolate(dynamic input) {
           attraction,
           similarityToDistance,
           controller,
+          positionsToPreserve: positionsToPreserve,
         );
       } else {
         finalPositions = mdsPositions.map(
@@ -288,14 +305,23 @@ Map<String, Point> _refineWithForces(
   double repulsion,
   double attraction,
   double Function(num) similarityToDistance,
-  controller,
-) {
+  controller, {
+  Map<String, Point>? positionsToPreserve,
+}) {
   final positions = <String, Point>{};
   final velocities = <String, Point>{};
+  final lockedNodes = <String>{};
 
   for (final entry in initialPositions.entries) {
     positions[entry.key] = Point(entry.value.x, entry.value.y);
     velocities[entry.key] = const Point(0, 0);
+  }
+
+  if (positionsToPreserve != null) {
+    for (final entry in positionsToPreserve.entries) {
+      positions[entry.key] = entry.value;
+      lockedNodes.add(entry.key);
+    }
   }
 
   final edges = <ForceGraphEdgeDataMap>[];
@@ -314,6 +340,8 @@ Map<String, Point> _refineWithForces(
     }
 
     for (var v in positions.entries) {
+      if (lockedNodes.contains(v.key)) continue;
+
       for (var u in positions.entries) {
         if (v.key == u.key) continue;
 
@@ -351,14 +379,27 @@ Map<String, Point> _refineWithForces(
         var fx = dx / dist * force;
         var fy = dy / dist * force;
 
-        disp[sourceID] = Point(disp[sourceID]!.x - fx, disp[sourceID]!.y - fy);
-        disp[targetID] = Point(disp[targetID]!.x + fx, disp[targetID]!.y + fy);
+        if (!lockedNodes.contains(sourceID)) {
+          disp[sourceID] = Point(
+            disp[sourceID]!.x - fx,
+            disp[sourceID]!.y - fy,
+          );
+        }
+        if (!lockedNodes.contains(targetID)) {
+          disp[targetID] = Point(
+            disp[targetID]!.x + fx,
+            disp[targetID]!.y + fy,
+          );
+        }
       }
     }
 
     for (final e in positions.entries) {
       final node = e.value;
       final id = e.key;
+
+      if (lockedNodes.contains(id)) continue;
+
       final dampedDisp = Point(disp[id]!.x * 0.1, disp[id]!.y * 0.1);
 
       final newPos = Point(node.x + dampedDisp.x, node.y + dampedDisp.y);

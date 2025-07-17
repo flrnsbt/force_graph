@@ -40,6 +40,18 @@ void performDistanceLayoutIsolate(dynamic input) {
       final minDistance = unwrappedInput['minDistance'] as double;
       final maxDistance = unwrappedInput['maxDistance'] as double;
       final tolerance = unwrappedInput['tolerance'] as double;
+      final preserved =
+          unwrappedInput['positionsToPreserve'] as Map<String, dynamic>?;
+
+      if (preserved case final Map<String, dynamic> preservedMap) {
+        for (final entry in preservedMap.entries) {
+          final id = entry.key;
+          final pos = entry.value;
+          if (pos case {'x': final num x, 'y': final num y}) {
+            positions[id] = Point<double>(x.toDouble(), y.toDouble());
+          }
+        }
+      }
 
       if (rawNodes is Iterable) {
         for (final n in rawNodes) {
@@ -51,15 +63,19 @@ void performDistanceLayoutIsolate(dynamic input) {
         }
       }
 
-      final placed = <String>{};
+      final placed = positions.keys.toSet();
 
       if (edges.isNotEmpty) {
         final first = edges.removeAt(0);
-        positions[first.source] = const Point(0, 0);
-        positions[first.target] = Point(
-          first.distance(minDistance, maxDistance),
-          0,
-        );
+        if (!positions.containsKey(first.source)) {
+          positions[first.source] = const Point(0, 0);
+        }
+        if (!positions.containsKey(first.target)) {
+          positions[first.target] = Point(
+            first.distance(minDistance, maxDistance),
+            0,
+          );
+        }
         placed.addAll([first.source, first.target]);
 
         bool progress = true;
@@ -80,6 +96,12 @@ void performDistanceLayoutIsolate(dynamic input) {
             if (sourcePlaced || targetPlaced) {
               final knownId = sourcePlaced ? edge.source : edge.target;
               final unknownId = sourcePlaced ? edge.target : edge.source;
+
+              if (positions.containsKey(unknownId)) {
+                edges.removeAt(i);
+                continue;
+              }
+
               final knownPos = positions[knownId]!;
               final dist = edge.distance(minDistance, maxDistance);
 
@@ -110,7 +132,10 @@ void performDistanceLayoutIsolate(dynamic input) {
                 if (points.isNotEmpty) {
                   final selected = points.firstWhere(
                     (p) => positions.values.every(
-                      (existing) => p.distanceTo(existing) > minDistance,
+                      (existing) =>
+                          existing == knownPos ||
+                          existing == known2Pos ||
+                          p.distanceTo(existing) > minDistance,
                     ),
                     orElse: () => points.reduce((a, b) => a.y > b.y ? a : b),
                   );

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 typedef ForceGraphEdgeDataMap = Map;
 
 typedef ForceGraphNodeDataMap = Map;
@@ -20,4 +22,8 @@ extension ForceGraphEdgeDataExt on ForceGraphEdgeDataMap {
   String get source => this['source'] as String;
   String get target => this['target'] as String;
   num get similarity => this['similarity'] as num;
+}
+
+extension PointExtension<N extends num> on Point<N> {
+  Map<String, N> toMap() => {'x': x, 'y': y};
 }

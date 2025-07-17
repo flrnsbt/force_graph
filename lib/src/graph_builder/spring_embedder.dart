@@ -19,9 +19,12 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final edges = <ForceGraphEdgeDataMap>{};
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
+      final rawPreserved =
+          unwrappedInput['positionsToPreserve'] as Map<String, dynamic>? ?? {};
       final int correctionIterations =
           unwrappedInput['correctionIterations'] as int;
       final correctionFactor = unwrappedInput['correctionFactor'] as double;
+
       double similarityToDistance(num similarity) {
         const minDist = 2.0;
         final maxDist = 25;
@@ -57,12 +60,22 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         }
       }
 
+      if (rawPreserved.isNotEmpty) {
+        for (final entry in rawPreserved.entries) {
+          final point = entry.value as Map<String, dynamic>;
+          positions[entry.key] = Point<double>(
+            point['x'] as double,
+            point['y'] as double,
+          );
+        }
+      }
+
       if (rawNodes is Iterable) {
         for (final n in rawNodes) {
           final node = ForceGraphNodeDataMap.from(n);
-          positions[node.id] = Point(
-            rand.nextDouble() * width,
-            rand.nextDouble() * height,
+          positions.putIfAbsent(
+            node.id,
+            () => Point(rand.nextDouble() * width, rand.nextDouble() * height),
           );
           for (final edge in node.edges) {
             edges.add(edge);
@@ -138,8 +151,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       correctEdgeDistances(positions, edges);
       return ImMap.wrap({
         'positions': {
-          for (final e in positions.entries)
-            e.key: {'x': e.value.x, 'y': e.value.y},
+          for (final e in positions.entries) e.key: e.value.toMap(),
         },
         'final': true,
       });

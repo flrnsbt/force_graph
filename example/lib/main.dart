@@ -65,7 +65,7 @@ class TestPage extends StatelessWidget {
       body: ForceGraphWidget(
         controller: ForceGraphController(
           nodes: mockGraphNodes,
-          graphBuilder: DistanceGraphBuilder(minDistance: 3, maxDistance: 20),
+          // graphBuilder: DistanceGraphBuilder(minDistance: 3, maxDistance: 20),
           uniformEdgeWeight: true,
         ),
         edgeTooltipBuilder: (context, edge) {

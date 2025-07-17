@@ -27,6 +27,9 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool enableSelection;
 
+  final double? nodeDragMaxForce;
+  final double nodeDragDamping;
+
   final LinkedHashSet<String> _selectedNodeIds = LinkedHashSet();
 
   final double jointDamping;
@@ -49,6 +52,8 @@ class ForceGraphController extends ChangeNotifier {
     bool graphBuilderDebugLogs = kDebugMode,
     this.enableSelection = true,
     double nodeLinearDamping = 2.5,
+    this.nodeDragMaxForce,
+    this.nodeDragDamping = 1,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
@@ -84,10 +89,6 @@ class ForceGraphController extends ChangeNotifier {
     if (nodes.isNotEmpty) {
       _rawData.addAll(nodes);
     }
-  }
-
-  void updateGraphBuilder(ForceDirectedGraphBuilder graphBuilder) {
-    _graphBuilder = graphBuilder;
   }
 
   int? maxSelection = 1;
@@ -283,7 +284,8 @@ class ForceGraphController extends ChangeNotifier {
           _isLoading = true;
           notifyListeners();
         }
-        await _loadData(_rawData);
+        final processedNodes = await _performLayout(_rawData);
+        await _loadData(processedNodes);
 
         _startTicker();
       }
@@ -385,8 +387,6 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-
-
   final __onTaps = <void Function(ForceGraphNode)>[];
 
   final __onSelectionChangeds = <void Function(List<ForceGraphNode>)>[];
@@ -428,7 +428,6 @@ class ForceGraphController extends ChangeNotifier {
     for (final node in _nodes.values) {
       world.destroyBody(node.body);
     }
-
     _selectedNodeIds.clear();
     _joints.clear();
     _nodes.clear();
@@ -460,7 +459,21 @@ class ForceGraphController extends ChangeNotifier {
     return _completer!.future.whenComplete(() => null);
   }
 
-  ForceDirectedGraphBuilder _graphBuilder;
+  Future<void> addNodes(
+    List<ForceGraphNodeData> nodes, {
+    bool notifyReadyStatusChange = true,
+  }) async {
+    final worldSize = viewportController.worldSize;
+
+    await _graphBuilder.loadMore(nodes, worldSize, (progress) {
+      _loadingProgressStep = progress;
+      notifyListeners();
+    });
+    _clear();
+    await _loadData(_graphBuilder.getNodes());
+  }
+
+  final ForceDirectedGraphBuilder _graphBuilder;
 
   double? nodeHiddenOpacity;
 
@@ -472,14 +485,19 @@ class ForceGraphController extends ChangeNotifier {
     return [for (final id in _selectedNodeIds) _nodes[id]!];
   }
 
-  Future<void> _loadData(List<ForceGraphNodeData> nodes) async {
+  Future<Map<ForceGraphNodeData, Vector2>> _performLayout(
+    List<ForceGraphNodeData> nodes,
+  ) async {
     final worldSize = viewportController.worldSize;
     await _graphBuilder.performLayout(nodes, worldSize, (progress) {
       _loadingProgressStep = progress;
       notifyListeners();
     });
+    return _graphBuilder.getNodes();
+  }
 
-    for (final e in _graphBuilder.nodes.entries) {
+  Future<void> _loadData(Map<ForceGraphNodeData, Vector2> nodes) async {
+    for (final e in nodes.entries) {
       final body = ForceGraphNode._fromForceGraphNodeData(
         e.key,
         this,
@@ -598,8 +616,8 @@ class ForceGraphController extends ChangeNotifier {
       ..bodyA = ground
       ..bodyB = body
       ..target.setFrom(targetWorld)
-      ..maxForce = body.mass * 60
-      ..dampingRatio = 1;
+      ..maxForce = nodeDragMaxForce ?? (body.mass * 60)
+      ..dampingRatio = nodeDragDamping;
     _mouseJoint = MouseJoint(mouseJointDef);
     world.createJoint(_mouseJoint!);
   }
