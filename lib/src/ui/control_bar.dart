@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:force_graph/src/controller.dart';
+export 'package:force_graph/src/ui/zoom_widget.dart';
 import 'package:force_graph/src/ui/zoom_widget.dart';
 
 class ControlBar extends StatefulWidget {
