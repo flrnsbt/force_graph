@@ -265,6 +265,18 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void selectAllNodes() {
+    for (final node in _nodes.values) {
+      node.selected = true;
+    }
+  }
+
+  void unselectAllNodes() {
+    for (final node in _nodes.values) {
+      node.selected = false;
+    }
+  }
+
   void focusNode(String nodeID) {
     final node = _nodes[nodeID]!;
     node._animateCenter();
