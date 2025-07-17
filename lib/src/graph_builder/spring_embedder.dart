@@ -19,8 +19,8 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final edges = <ForceGraphEdgeDataMap>{};
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
-      final int correctionIteration =
-          unwrappedInput['correctionIteration'] as int;
+      final int correctionIterations =
+          unwrappedInput['correctionIterations'] as int;
       final correctionFactor = unwrappedInput['correctionFactor'] as double;
       double similarityToDistance(num similarity) {
         const minDist = 2.0;
@@ -34,7 +34,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         Map<String, Point<double>> positions,
         Set<ForceGraphEdgeDataMap> edges,
       ) {
-        for (int i = 0; i < correctionIteration; i++) {
+        for (int i = 0; i < correctionIterations; i++) {
           for (final edge in edges) {
             final a = positions[edge.source]!;
             final b = positions[edge.target]!;

@@ -12,8 +12,6 @@ import 'package:force_graph/force_graph.dart';
 import 'package:forge2d/forge2d.dart';
 
 class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
-  @override
-  // ignore: overridden_fields
   double minDistance;
   double maxDistance;
   double tolerance;
@@ -98,11 +96,13 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
   double repulsion;
   double attraction;
   int correctionIterations;
+  double correctionFactor;
   SpringEmbedderGraphBuilder({
-    this.iterations = 500,
+    this.iterations = 800,
     required this.repulsion,
     required this.attraction,
-    this.correctionIterations = 500,
+    this.correctionIterations = 300,
+    this.correctionFactor = 0.5,
     super.debugLogs,
   }) : assert(iterations > 0, 'iterations must be greater than 0'),
        assert(repulsion > 0, 'repulsion must be greater than 0'),
@@ -154,6 +154,8 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
       'iterations': iterations,
       'repulsion': repulsion,
       'attraction': attraction,
+      'correctionIterations': correctionIterations,
+      'correctionFactor': correctionFactor
     };
 
     final Map result = await isolate.compute(
