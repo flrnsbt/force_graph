@@ -125,8 +125,10 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  Future<void> _onSizeSet() {
-    return _init();
+  void _onSizeSet() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _init();
+    });
   }
 
   Ticker? _ticker;
@@ -383,11 +385,17 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void Function(ForceGraphNode)? _onTap;
 
-  set onTap(void Function(ForceGraphNode)? onTap) => _onTap = onTap;
+
+  final __onTaps = <void Function(ForceGraphNode)>[];
 
   final __onSelectionChangeds = <void Function(List<ForceGraphNode>)>[];
+
+  void _onTap(ForceGraphNode node) {
+    for (final f in __onTaps) {
+      f(node);
+    }
+  }
 
   void _onSelectionChanged() {
     final s = _nodes.values.where((node) => node.selected).toList();
@@ -406,6 +414,14 @@ class ForceGraphController extends ChangeNotifier {
     void Function(List<ForceGraphNode>) onSelectionChanged,
   ) {
     __onSelectionChangeds.remove(onSelectionChanged);
+  }
+
+  void addOnTapListener(void Function(ForceGraphNode) onTap) {
+    __onTaps.add(onTap);
+  }
+
+  void removeOnTapListener(void Function(ForceGraphNode) onTap) {
+    __onTaps.remove(onTap);
   }
 
   void _clear() {
@@ -1141,6 +1157,8 @@ class ForceGraphNode {
 
     final body = world.createBody(nodeDef);
 
+    body.createFixtureFromShape(CircleShape(radius: node.radius));
+
     // body.setMassData(MassData()..mass = .1 * node.edges.length);
     body.setMassData(_mass);
     body.linearDamping = linearDamping;
@@ -1158,7 +1176,7 @@ class ForceGraphNode {
     if (__onTap != null) {
       __onTap!();
     }
-    _controller._onTap?.call(this);
+    _controller._onTap(this);
     selected = !selected;
     if (selected) {
       _animateCenter();
