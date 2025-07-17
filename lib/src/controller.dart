@@ -32,9 +32,23 @@ class ForceGraphController extends ChangeNotifier {
   final double jointDamping;
   final double jointFrequency;
 
+  double _nodeLinearDamping = 2.5;
+
+  double get nodeLinearDamping => _nodeLinearDamping;
+
+  set nodeLinearDamping(double value) {
+    if (_nodeLinearDamping != value) {
+      _nodeLinearDamping = value;
+      for (final node in _nodes.values) {
+        node.body.linearDamping = value;
+      }
+    }
+  }
+
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
     this.enableSelection = true,
+    double nodeLinearDamping = 2.5,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
@@ -56,6 +70,7 @@ class ForceGraphController extends ChangeNotifier {
          minZoom: minZoom,
          maxZoom: maxZoom,
        ),
+       _nodeLinearDamping = nodeLinearDamping,
        _graphBuilder =
            graphBuilder ??
            SpringEmbedderGraphBuilder(
@@ -453,7 +468,7 @@ class ForceGraphController extends ChangeNotifier {
         e.key,
         this,
         position: e.value,
-        linearDamping: 2.5,
+        linearDamping: nodeLinearDamping,
         enableNodesAutoMove: enableNodesAutoMove,
       );
       _nodes[e.key.id] = body;
