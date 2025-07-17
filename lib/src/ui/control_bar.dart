@@ -12,7 +12,12 @@ class ControlBar extends StatefulWidget {
     required this.controlBarDirection,
     required this.controlBarSpacing,
     this.enableAutoHide = true,
+    this.backgroundColor,
+    this.foregroundColor,
     this.enableOpacityChange = true,
+    this.dividerColor,
+    this.dividerSpacing,
+    this.borderColor,
   });
   final ForceGraphController controller;
   final Alignment controlBarAlignment;
@@ -20,6 +25,11 @@ class ControlBar extends StatefulWidget {
   final EdgeInsets controlBarSpacing;
   final bool enableAutoHide;
   final bool enableOpacityChange;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+  final Color? dividerColor;
+  final double? dividerSpacing;
+  final Color? borderColor;
 
   @override
   State<ControlBar> createState() => _ControlBarState();
@@ -71,9 +81,19 @@ class _ControlBarState extends State<ControlBar> {
   @override
   Widget build(BuildContext context) {
     final viewportController = widget.controller.viewportController;
-
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color foregroundColor =
+        widget.foregroundColor ?? (isDark ? Colors.white : Colors.grey[700])!;
+    final dividerColor =
+        widget.dividerColor ?? foregroundColor.withValues(alpha: 0.25);
+    final backgroundColor =
+        widget.backgroundColor ??
+        (isDark ? Colors.grey[900] : Colors.grey[300]);
     final bool isHorizontal = widget.controlBarDirection == Axis.horizontal;
-    final divider = isHorizontal ? const VerticalDivider() : const Divider();
+    final divider = isHorizontal
+        ? VerticalDivider(color: dividerColor, width: widget.dividerSpacing)
+        : Divider(color: dividerColor, height: widget.dividerSpacing);
     final hideOffset = _getHideOffset(widget.controlBarAlignment);
     return MouseRegion(
       onEnter: (event) {
@@ -124,7 +144,11 @@ class _ControlBarState extends State<ControlBar> {
               width: isHorizontal ? double.infinity : 50,
               height: isHorizontal ? 50 : double.infinity,
               decoration: BoxDecoration(
-                color: Colors.black38,
+                color: backgroundColor,
+                border: Border.all(
+                  color: widget.borderColor ?? dividerColor,
+                  width: 0.5,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.all(8),
@@ -137,7 +161,7 @@ class _ControlBarState extends State<ControlBar> {
                     padding: EdgeInsets.zero,
                     tooltip: 'Reload',
                     icon: const Icon(Icons.refresh),
-                    color: Colors.white,
+                    color: foregroundColor,
                     onPressed: () {
                       widget.controller.reload();
                     },
@@ -149,7 +173,7 @@ class _ControlBarState extends State<ControlBar> {
 
                     tooltip: 'Recenter',
                     icon: const Icon(Icons.center_focus_strong),
-                    color: Colors.white,
+                    color: foregroundColor,
                     onPressed: () {
                       widget.controller.recenter(true);
                     },
@@ -157,6 +181,7 @@ class _ControlBarState extends State<ControlBar> {
                   divider,
                   Flexible(
                     child: ZoomControllerWidget(
+                      foregroundColor: foregroundColor,
                       direction: widget.controlBarDirection,
                       zoom: viewportController.zoom,
                       minZoom: viewportController.minZoom,

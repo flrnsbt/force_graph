@@ -8,6 +8,7 @@ class ZoomControllerWidget extends StatelessWidget {
   final double maxZoom;
   final double step;
   final Axis direction;
+  final Color? foregroundColor;
 
   const ZoomControllerWidget({
     super.key,
@@ -15,6 +16,7 @@ class ZoomControllerWidget extends StatelessWidget {
     required this.onZoomChanged,
     this.minZoom = 0.1,
     this.maxZoom = 2.0,
+    this.foregroundColor,
     this.step = 0.1,
     this.direction = Axis.vertical,
   });
@@ -51,7 +53,7 @@ class ZoomControllerWidget extends StatelessWidget {
 
           tooltip: 'Zoom in',
           icon: const Icon(Icons.zoom_in),
-          color: Colors.white,
+          color: foregroundColor,
 
           onPressed: () {
             final newZoom = (zoom + step).clamp(minZoom, maxZoom);
@@ -72,7 +74,7 @@ class ZoomControllerWidget extends StatelessWidget {
 
           tooltip: 'Zoom out',
           icon: const Icon(Icons.zoom_out),
-          color: Colors.white,
+          color: foregroundColor,
 
           onPressed: () {
             final newZoom = (zoom - step).clamp(minZoom, maxZoom);

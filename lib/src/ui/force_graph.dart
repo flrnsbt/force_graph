@@ -22,6 +22,8 @@ class ForceGraphWidget extends StatefulWidget {
     this.edgeTooltipSpacing = 20,
     this.customControlBarBuilder,
     this.focusNode,
+    this.defaultControlBarForegroundColor,
+    this.defaultControlBarBackgroundColor,
     this.onSelectionChanged,
     this.defaultControlBarAutoHide,
     this.defaultControlBarOpacityChangesEnabled = true,
@@ -31,10 +33,8 @@ class ForceGraphWidget extends StatefulWidget {
   }) : errorBuilder = errorBuilder ?? _kDefaultErrorBuilder;
   final Color? selectionOverlayColor;
   final ForceGraphController controller;
-  final Axis? controlBarDirection;
   final bool showControlBar;
-  final Alignment? controlBarAlignment;
-  final EdgeInsets controlBarSpacing;
+  
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
   final Offset Function(Offset position)? offsetUpdater;
@@ -53,6 +53,11 @@ class ForceGraphWidget extends StatefulWidget {
     double? progress,
   )?
   loadingBuilder;
+  final Axis? controlBarDirection;
+  final Alignment? controlBarAlignment;
+  final EdgeInsets controlBarSpacing;
+  final Color? defaultControlBarBackgroundColor;
+  final Color? defaultControlBarForegroundColor;
   final bool? defaultControlBarAutoHide;
   final bool defaultControlBarOpacityChangesEnabled;
   final Widget Function(BuildContext context, Object error) errorBuilder;
@@ -215,24 +220,26 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
     final bool isLoading = widget.controller.isLoading;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Opacity(opacity: isReady ? 1 : 0.01, child: child),
-        if (isReady)
-          ..._buildOverlays()
-        else if (hasError)
-          Positioned.fill(child: widget.errorBuilder(context, error))
-        else if (isLoading && widget.loadingBuilder != null)
-          Positioned.fill(
-            child: widget.loadingBuilder!(
-              context,
-              widget.controller.loadingProgressStep,
-              widget.controller.loadingTotalStep,
-              widget.controller.loadingProgress,
+    return ClipRect(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Opacity(opacity: isReady ? 1 : 0.01, child: child),
+          if (isReady)
+            ..._buildOverlays()
+          else if (hasError)
+            Positioned.fill(child: widget.errorBuilder(context, error))
+          else if (isLoading && widget.loadingBuilder != null)
+            Positioned.fill(
+              child: widget.loadingBuilder!(
+                context,
+                widget.controller.loadingProgressStep,
+                widget.controller.loadingTotalStep,
+                widget.controller.loadingProgress,
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -265,6 +272,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
                   ControlBar(
                     enableAutoHide: enableAutoHide,
                     controller: widget.controller,
+                    backgroundColor: widget.defaultControlBarBackgroundColor,
+                    foregroundColor: widget.defaultControlBarForegroundColor,
                     enableOpacityChange: opacityChanges,
                     controlBarSpacing: widget.controlBarSpacing,
                     controlBarAlignment: controlBarAlignment,
