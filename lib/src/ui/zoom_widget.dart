@@ -9,15 +9,27 @@ class ZoomControllerWidget extends StatelessWidget {
   final double step;
   final Axis direction;
   final Color? foregroundColor;
+  final ButtonStyle? buttonStyle;
+  final EdgeInsets buttonPadding;
+  final BoxConstraints? buttonConstraints;
+  final double? buttonIconSize;
+  final String zoomInTooltip;
+  final String zoomOutTooltip;
 
   const ZoomControllerWidget({
     super.key,
     required this.zoom,
     required this.onZoomChanged,
+    this.buttonConstraints,
+    this.buttonPadding = EdgeInsets.zero,
+    this.buttonStyle,
     this.minZoom = 0.1,
+    this.buttonIconSize,
     this.maxZoom = 2.0,
     this.foregroundColor,
     this.step = 0.1,
+    this.zoomInTooltip = 'Zoom in',
+    this.zoomOutTooltip = 'Zoom out',
     this.direction = Axis.vertical,
   });
 
@@ -49,9 +61,11 @@ class ZoomControllerWidget extends StatelessWidget {
           onZoomChanged(zoom, false, true);
         },
         child: IconButton(
-          padding: EdgeInsets.zero,
-
-          tooltip: 'Zoom in',
+          padding: buttonPadding,
+          style: buttonStyle,
+          constraints: buttonConstraints,
+          iconSize: buttonIconSize,
+          tooltip: zoomInTooltip,
           icon: const Icon(Icons.zoom_in),
           color: foregroundColor,
 
@@ -70,9 +84,11 @@ class ZoomControllerWidget extends StatelessWidget {
           onZoomChanged(zoom, false, true);
         },
         child: IconButton(
-          padding: EdgeInsets.zero,
-
-          tooltip: 'Zoom out',
+          padding: buttonPadding,
+          style: buttonStyle,
+          constraints: buttonConstraints,
+          iconSize: buttonIconSize,
+          tooltip: zoomOutTooltip,
           icon: const Icon(Icons.zoom_out),
           color: foregroundColor,
 
