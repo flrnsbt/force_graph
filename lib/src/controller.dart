@@ -29,6 +29,8 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool enableSelection;
 
+  final double? nodeMinimumSpacing;
+
   final double? nodeDragMaxForce;
   final double nodeDragDamping;
 
@@ -57,6 +59,7 @@ class ForceGraphController extends ChangeNotifier {
     this.nodeDragMaxForce,
     this.staticNodes = false,
     this.nodeDragDamping = 1,
+    this.nodeMinimumSpacing = 0,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
@@ -558,9 +561,11 @@ class ForceGraphController extends ChangeNotifier {
         debugPrint('Error creating joint for edge $edge: $e');
       }
     }
-    final shape = CircleShape(radius: minSpacing / 2);
-    for (final node in _nodes.values) {
-      node.body.createFixtureFromShape(shape);
+    if (nodeMinimumSpacing != 0) {
+      final shape = CircleShape(radius: nodeMinimumSpacing ?? (minSpacing / 2));
+      for (final node in _nodes.values) {
+        node.body.createFixtureFromShape(shape);
+      }
     }
   }
 
@@ -623,7 +628,6 @@ class ForceGraphController extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   bool get _controlKeyPressed => defaultTargetPlatform == TargetPlatform.macOS
       ? HardwareKeyboard.instance.isMetaPressed
