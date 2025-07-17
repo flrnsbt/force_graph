@@ -96,6 +96,7 @@ class _ControlBarState extends State<ControlBar> {
         ? VerticalDivider(color: dividerColor, width: widget.dividerSpacing)
         : Divider(color: dividerColor, height: widget.dividerSpacing);
     final hideOffset = _getHideOffset(widget.controlBarAlignment);
+    final panningMode = widget.controller.panningMode;
     return MouseRegion(
       onEnter: (event) {
         _scheduleDisable?.cancel();
@@ -160,6 +161,28 @@ class _ControlBarState extends State<ControlBar> {
                 children: [
                   IconButton(
                     padding: EdgeInsets.zero,
+                    tooltip: 'Click mode',
+
+                    icon: const Icon(Icons.ads_click_rounded),
+                    color: panningMode ? foregroundColor : theme.primaryColor,
+                    onPressed: () {
+                      widget.controller.setClickingMode();
+                    },
+                  ),
+                  divider,
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    tooltip: 'Pan mode',
+                    icon: const Icon(Icons.pan_tool),
+
+                    color: panningMode ? theme.primaryColor : foregroundColor,
+                    onPressed: () {
+                      widget.controller.setPanningMode();
+                    },
+                  ),
+                  divider,
+                  IconButton(
+                    padding: EdgeInsets.zero,
                     tooltip: 'Reload',
                     icon: const Icon(Icons.refresh),
                     color: foregroundColor,
@@ -167,11 +190,9 @@ class _ControlBarState extends State<ControlBar> {
                       widget.controller.reload();
                     },
                   ),
-
                   divider,
                   IconButton(
                     padding: EdgeInsets.zero,
-
                     tooltip: 'Recenter',
                     icon: const Icon(Icons.center_focus_strong),
                     color: foregroundColor,

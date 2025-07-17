@@ -601,7 +601,30 @@ class ForceGraphController extends ChangeNotifier {
   Offset? get hoverPosition => _hoverPosition;
   bool get isDraggingNode => _isDraggingNode;
   bool get isSelecting => _selectionStart != null;
-  bool get isPanning => _controlKeyPressed;
+  bool get isPanning {
+    if (panningMode) return true;
+    return _controlKeyPressed;
+  }
+
+  bool _panningMode = false;
+
+  bool get panningMode => _panningMode;
+
+  void setPanningMode() {
+    if (_panningMode != true) {
+      _panningMode = true;
+      notifyListeners();
+    }
+  }
+
+  void setClickingMode() {
+    if (_panningMode != false) {
+      _panningMode = false;
+      notifyListeners();
+    }
+  }
+
+
   bool get _controlKeyPressed => defaultTargetPlatform == TargetPlatform.macOS
       ? HardwareKeyboard.instance.isMetaPressed
       : HardwareKeyboard.instance.isControlPressed;

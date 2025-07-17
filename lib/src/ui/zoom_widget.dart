@@ -15,6 +15,7 @@ class ZoomControllerWidget extends StatelessWidget {
   final double? buttonIconSize;
   final String zoomInTooltip;
   final String zoomOutTooltip;
+  final double sliderSize;
 
   const ZoomControllerWidget({
     super.key,
@@ -28,6 +29,7 @@ class ZoomControllerWidget extends StatelessWidget {
     this.maxZoom = 2.0,
     this.foregroundColor,
     this.step = 0.1,
+    this.sliderSize = 200,
     this.zoomInTooltip = 'Zoom in',
     this.zoomOutTooltip = 'Zoom out',
     this.direction = Axis.vertical,
@@ -46,11 +48,13 @@ class ZoomControllerWidget extends StatelessWidget {
     );
     if (direction == Axis.vertical) {
       slider = SizedBox(
-        height: 200,
+        height: sliderSize,
         child: RotatedBox(quarterTurns: -1, child: slider),
       );
     } else {
-      slider = Flexible(child: slider);
+      slider = Flexible(
+        child: SizedBox(width: sliderSize, child: slider),
+      );
     }
     List<Widget> children = [
       GestureDetector(
