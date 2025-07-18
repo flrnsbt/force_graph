@@ -38,7 +38,6 @@ void performDistanceLayoutIsolate(dynamic input) {
       final edges = <ForceGraphEdgeDataMap>[];
       final rawNodes = unwrappedInput['nodes'];
       final minDistance = unwrappedInput['minDistance'] as double;
-      final maxDistance = unwrappedInput['maxDistance'] as double;
       final tolerance = unwrappedInput['tolerance'] as double;
       final preserved =
           unwrappedInput['positionsToPreserve'] as Map<String, dynamic>?;
@@ -72,7 +71,7 @@ void performDistanceLayoutIsolate(dynamic input) {
         }
         if (!positions.containsKey(first.target)) {
           positions[first.target] = Point(
-            first.distance(minDistance, maxDistance),
+            first.distance,
             0,
           );
         }
@@ -103,7 +102,7 @@ void performDistanceLayoutIsolate(dynamic input) {
               }
 
               final knownPos = positions[knownId]!;
-              final dist = edge.distance(minDistance, maxDistance);
+              final dist = edge.distance;
 
               final otherEdge = edges.firstWhere(
                 (e) =>
@@ -120,7 +119,7 @@ void performDistanceLayoutIsolate(dynamic input) {
                     ? otherEdge.target
                     : otherEdge.source;
                 final known2Pos = positions[known2Id]!;
-                final dist2 = otherEdge.distance(minDistance, maxDistance);
+                final dist2 = otherEdge.distance;
 
                 final points = _circleIntersections(
                   knownPos,
@@ -191,9 +190,3 @@ void performDistanceLayoutIsolate(dynamic input) {
   );
 }
 
-extension on ForceGraphEdgeDataMap {
-  double distance(double minimumSpacing, double maximumSpacing) {
-    return (maximumSpacing - minimumSpacing) * (1.0 - similarity) +
-        minimumSpacing;
-  }
-}

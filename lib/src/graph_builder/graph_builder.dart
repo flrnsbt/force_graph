@@ -14,26 +14,9 @@ import 'package:force_graph/force_graph.dart';
 import 'package:forge2d/forge2d.dart';
 
 class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
-  double? _minDistance;
-  double? _maxDistance;
   late double _tolerance;
 
-  double get minDistance => _minDistance!;
-  double get maxDistance => _maxDistance!;
   double get tolerance => _tolerance;
-
-  set minDistance(double value) {
-    assert(value > 0);
-    assert(_maxDistance == null || value < _maxDistance!);
-    _minDistance = value;
-    parametersChanged();
-  }
-
-  set maxDistance(double value) {
-    assert(_minDistance == null || value > _minDistance!);
-    _maxDistance = value;
-    parametersChanged();
-  }
 
   set tolerance(double value) {
     assert(value > 0);
@@ -42,14 +25,12 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
   }
 
   DistanceGraphBuilder({
-    required double minDistance,
-    required double maxDistance,
+    super.minDistance,
+    super.maxDistance,
     double tolerance = 1e-3,
 
     super.debugLogs,
   }) {
-    this.minDistance = minDistance;
-    this.maxDistance = maxDistance;
     this.tolerance = tolerance;
   }
 
@@ -75,29 +56,15 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
 
   @override
   Future<void> $_performLayout(
-    Iterable<ForceGraphNodeData> nodes,
+    Iterable<ForceGraphNodeDataMap> nodes,
     Size size, [
     ValueChanged<int>? progressCallback,
     Map<String, Point<double>>? positionsToPreserve,
   ]) async {
-    final nodesJSON = <Map>[];
-    for (final node in nodes) {
-      final edgesJSON = <Map>[];
-      for (final edge in node.edges) {
-        edges.add(edge);
-        edgesJSON.add({
-          'source': edge.source,
-          'target': edge.target,
-          'similarity': edge.similarity,
-        });
-      }
-      nodesJSON.add({'id': node.id, 'edges': edgesJSON});
-    }
     final inputData = <String, dynamic>{
-      'nodes': nodesJSON,
-      'minDistance': minDistance,
-      'maxDistance': maxDistance,
+      'nodes': nodes,
       'tolerance': tolerance,
+      'minDistance': minDistance,
       if (positionsToPreserve != null)
         'positionsToPreserve': _jsonifyPoints(positionsToPreserve),
     };
@@ -179,6 +146,8 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
     int correctionIterations = 300,
     double correctionFactor = 0.5,
     super.debugLogs,
+    super.maxDistance,
+    super.minDistance,
   }) {
     this.iterations = iterations;
     this.repulsion = repulsion;
@@ -205,26 +174,13 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
 
   @override
   Future<void> $_performLayout(
-    Iterable<ForceGraphNodeData> nodes,
+    Iterable<ForceGraphNodeDataMap> nodes,
     Size size, [
     ValueChanged<int>? progressCallback,
     Map<String, Point<double>>? positionsToPreserve,
   ]) async {
-    final nodesJSON = <Map>[];
-    for (final node in nodes) {
-      final edgesJSON = <Map>[];
-      for (final edge in node.edges) {
-        edges.add(edge);
-        edgesJSON.add({
-          'source': edge.source,
-          'target': edge.target,
-          'similarity': edge.similarity,
-        });
-      }
-      nodesJSON.add({'id': node.id, 'edges': edgesJSON});
-    }
     final inputData = <String, dynamic>{
-      'nodes': nodesJSON,
+      'nodes': nodes,
       'width': size.width,
       'height': size.height,
       'iterations': iterations,
@@ -299,6 +255,8 @@ class MDSGraphBuilder extends ForceDirectedGraphBuilder {
     required double repulsion,
     required double attraction,
     super.debugLogs,
+    super.maxDistance,
+    super.minDistance,
   }) {
     this.iterations = iterations;
     this.repulsion = repulsion;
@@ -307,26 +265,13 @@ class MDSGraphBuilder extends ForceDirectedGraphBuilder {
 
   @override
   Future<void> $_performLayout(
-    Iterable<ForceGraphNodeData> nodes,
+    Iterable<ForceGraphNodeDataMap> nodes,
     Size size, [
     ValueChanged<int>? progressCallback,
     Map<String, Point<double>>? positionsToPreserve,
   ]) async {
-    final nodesJSON = <Map>[];
-    for (final node in nodes) {
-      final edgesJSON = <Map>[];
-      for (final edge in node.edges) {
-        edges.add(edge);
-        edgesJSON.add({
-          'source': edge.source,
-          'target': edge.target,
-          'similarity': edge.similarity,
-        });
-      }
-      nodesJSON.add({'id': node.id, 'edges': edgesJSON});
-    }
     final inputData = <String, dynamic>{
-      'nodes': nodesJSON,
+      'nodes': nodes,
       'width': size.width,
       'height': size.height,
       'iterations': iterations,
@@ -401,6 +346,23 @@ abstract class ForceDirectedGraphBuilder {
   final List<ForceGraphEdgeData> edges = [];
   final List<ForceGraphNodeData> _nodes = [];
 
+  double? _minDistance;
+  double? _maxDistance;
+  double get minDistance => _minDistance!;
+  double get maxDistance => _maxDistance!;
+  set minDistance(double value) {
+    assert(value > 0);
+    assert(_maxDistance == null || value < _maxDistance!);
+    _minDistance = value;
+    parametersChanged();
+  }
+
+  set maxDistance(double value) {
+    assert(_minDistance == null || value > _minDistance!);
+    _maxDistance = value;
+    parametersChanged();
+  }
+
   int? get totalStep => null;
 
   final bool debugLogs;
@@ -413,7 +375,18 @@ abstract class ForceDirectedGraphBuilder {
     _parametersChanged = true;
   }
 
-  ForceDirectedGraphBuilder({this.debugLogs = false});
+  ForceDirectedGraphBuilder({
+    this.debugLogs = false,
+    double? minDistance,
+    double? maxDistance,
+  }) {
+    if (minDistance != null) {
+      this.minDistance = minDistance;
+    }
+    if (maxDistance != null) {
+      this.maxDistance = maxDistance;
+    }
+  }
 
   IsolateManager? _isolate;
 
@@ -429,7 +402,7 @@ abstract class ForceDirectedGraphBuilder {
   bool ensureReady(double dt, ForceGraphController controller) => true;
 
   Future<void> $_performLayout(
-    Iterable<ForceGraphNodeData> nodes,
+    Iterable<ForceGraphNodeDataMap> nodes,
     Size size, [
     ValueChanged<int>? progressCallback,
     Map<String, Point<double>>? positionsToPreserve,
@@ -440,10 +413,12 @@ abstract class ForceDirectedGraphBuilder {
     Size size, [
     ValueChanged<int>? progressCallback,
   ]) async {
-    _clear();
-    _nodes.addAll(nodes);
     try {
-      await $_performLayout(nodes, size, progressCallback);
+      _clear();
+      _nodes.addAll(nodes);
+      _minDistance ??= 2;
+      _maxDistance ??= minDistance + log(nodes.length + 1) * 5;
+      await $_performLayout(_nodesToMap(nodes), size, progressCallback);
       _size = size;
       _parametersChanged = false;
     } catch (e) {
@@ -458,6 +433,9 @@ abstract class ForceDirectedGraphBuilder {
     Size size, [
     ValueChanged<int>? progressCallback,
   ]) {
+    if (nodes.isEmpty) {
+      return Future.value();
+    }
     if (_size != size) {
       _parametersChanged = true;
     }
@@ -468,7 +446,12 @@ abstract class ForceDirectedGraphBuilder {
     _positions.clear();
     edges.clear();
     _nodes.addAll(nodes);
-    return $_performLayout(nodes, size, progressCallback, positionsToPreserve);
+    return $_performLayout(
+      _nodesToMap(nodes),
+      size,
+      progressCallback,
+      positionsToPreserve,
+    );
   }
 
   void _clear() {
@@ -483,6 +466,34 @@ abstract class ForceDirectedGraphBuilder {
       result[node] = _positions[node.id]!.toVector2();
     }
     return UnmodifiableMapView(result);
+  }
+
+  
+
+  double similarityToDistance(double sim) {
+    sim = sim.clamp(0.0001, 1.0);
+    return (maxDistance - minDistance) * (1.0 - sim) + minDistance;
+  }
+
+  ForceGraphEdgeDataMap _edgeToMap(ForceGraphEdgeData edge) {
+    return {
+      'source': edge.source,
+      'target': edge.target,
+      'distance': similarityToDistance(edge.similarity),
+    };
+  }
+
+  List<ForceGraphNodeDataMap> _nodesToMap(Iterable<ForceGraphNodeData> nodes) {
+    final nodesJSON = <Map>[];
+    for (final node in nodes) {
+      final edgesJSON = <Map>[];
+      for (final edge in node.edges) {
+        edges.add(edge);
+        edgesJSON.add(_edgeToMap(edge));
+      }
+      nodesJSON.add({'id': node.id, 'edges': edgesJSON});
+    }
+    return nodesJSON;
   }
 }
 

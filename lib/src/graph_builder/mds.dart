@@ -44,12 +44,7 @@ void performMDSLayoutIsolate(dynamic input) {
         }
       }
 
-      double similarityToDistance(num similarity) {
-        const minDist = 0.5;
-        const maxDist = 25;
-        similarity = similarity.clamp(0.0001, 1.0);
-        return maxDist - similarity * (maxDist - minDist);
-      }
+    
 
       final n = nodeIds.length;
       final distances = List.generate(n, (_) => List.filled(n, 0.0));
@@ -59,7 +54,7 @@ void performMDSLayoutIsolate(dynamic input) {
         final targetIdx = nodeIds.indexOf(edge.target);
 
         if (sourceIdx != -1 && targetIdx != -1) {
-          final distance = similarityToDistance(edge.similarity);
+          final distance = edge.distance;
           distances[sourceIdx][targetIdx] = distance;
           distances[targetIdx][sourceIdx] = distance;
         }
@@ -91,7 +86,6 @@ void performMDSLayoutIsolate(dynamic input) {
           height,
           repulsion,
           attraction,
-          similarityToDistance,
           controller,
           positionsToPreserve: positionsToPreserve,
         );
@@ -304,7 +298,6 @@ Map<String, Point> _refineWithForces(
   double height,
   double repulsion,
   double attraction,
-  double Function(num) similarityToDistance,
   controller, {
   Map<String, Point>? positionsToPreserve,
 }) {
@@ -373,7 +366,7 @@ Map<String, Point> _refineWithForces(
         var dx = source.x - target.x;
         var dy = source.y - target.y;
         var dist = sqrt(dx * dx + dy * dy) + 0.01;
-        final edgeLength = similarityToDistance(edge.similarity);
+        final edgeLength = edge.distance;
         var force = attraction * (dist - edgeLength);
 
         var fx = dx / dist * force;

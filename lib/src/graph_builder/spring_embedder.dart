@@ -1,5 +1,5 @@
-import 'dart:math';
 
+import 'dart:math';
 import 'package:force_graph/src/graph_builder/data.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 
@@ -15,22 +15,28 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final attraction = unwrappedInput['attraction'] as double;
       final width = unwrappedInput['width'] as double;
       final height = unwrappedInput['height'] as double;
-      final positions = <String, Point<double>>{};
-      final edges = <ForceGraphEdgeDataMap>{};
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
       final rawPreserved =
           unwrappedInput['positionsToPreserve'] as Map<String, dynamic>? ?? {};
-      final int correctionIterations =
+      final correctionIterations =
           unwrappedInput['correctionIterations'] as int;
       final correctionFactor = unwrappedInput['correctionFactor'] as double;
 
-      double similarityToDistance(num similarity) {
-        const minDist = 2.0;
-        final maxDist = 25;
 
-        similarity = similarity.clamp(0.0001, 1.0);
-        return maxDist - similarity * (maxDist - minDist);
+      const minDistance = 0.01;
+      const maxDisplacement = 1000.0;
+
+      final positions = <String, Point<double>>{};
+      final edges = <ForceGraphEdgeDataMap>{};
+
+      Point<double> safeAdd(Point<double> a, Point<double> b) {
+        double clampVal(double v) {
+          if (v.isNaN || v.isInfinite) return 0;
+          return v.clamp(-maxDisplacement, maxDisplacement);
+        }
+
+        return Point(clampVal(a.x + b.x), clampVal(a.y + b.y));
       }
 
       void correctEdgeDistances(
@@ -44,10 +50,10 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
 
             final dx = b.x - a.x;
             final dy = b.y - a.y;
-            final dist = sqrt(dx * dx + dy * dy);
-            if (dist == 0) continue;
-            final distance = similarityToDistance(edge.similarity);
-            final diff = distance - dist;
+            final dist = sqrt(
+              dx * dx + dy * dy,
+            ).clamp(minDistance, double.infinity);
+            final diff = edge.distance - dist;
             final ratio = (diff / dist) * correctionFactor;
 
             final offsetX = dx * ratio / 2;
@@ -60,15 +66,14 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
         }
       }
 
-      if (rawPreserved.isNotEmpty) {
-        for (final entry in rawPreserved.entries) {
-          final point = entry.value as Map<String, dynamic>;
-          positions[entry.key] = Point<double>(
-            point['x'] as double,
-            point['y'] as double,
-          );
-        }
-      }
+      // Restore preserved
+      rawPreserved.forEach((key, value) {
+        final point = value as Map<String, dynamic>;
+        positions[key] = Point<double>(
+          point['x'] as double,
+          point['y'] as double,
+        );
+      });
 
       if (rawNodes is Iterable) {
         for (final n in rawNodes) {
@@ -77,81 +82,70 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
             node.id,
             () => Point(rand.nextDouble() * width, rand.nextDouble() * height),
           );
-          for (final edge in node.edges) {
-            edges.add(edge);
-          }
+          edges.addAll(node.edges);
         }
       }
 
       for (int i = 0; i < iterations; i++) {
-        final disp = <String, Point<double>>{};
+        final disp = <String, Point<double>>{
+          for (final key in positions.keys) key: const Point(0, 0),
+        };
 
-        // Initialize displacement
-        for (final key in positions.keys) {
-          disp[key] = const Point(0, 0);
-        }
-
-        // Repulsive forces
-        for (var v in positions.entries) {
-          for (var u in positions.entries) {
+        for (final v in positions.entries) {
+          for (final u in positions.entries) {
             if (v.key == u.key) continue;
+            double dx = v.value.x - u.value.x;
+            double dy = v.value.y - u.value.y;
+            double dist = sqrt(
+              dx * dx + dy * dy,
+            ).clamp(minDistance, double.infinity);
+            double force = repulsion / (dist * dist);
 
-            var dx = v.value.x - u.value.x;
-            var dy = v.value.y - u.value.y;
-            var dist = sqrt(dx * dx + dy * dy) + 0.01;
-
-            var force = repulsion / (dist * dist);
-
-            disp[v.key] = Point(
-              disp[v.key]!.x + dx / dist * force,
-              disp[v.key]!.y + dy / dist * force,
+            disp[v.key] = safeAdd(
+              disp[v.key]!,
+              Point(dx / dist * force, dy / dist * force),
             );
           }
         }
 
         for (final edge in edges) {
-          final sourceID = edge.source;
-          final targetID = edge.target;
-          final source = positions[sourceID];
-          final target = positions[targetID];
-          if (source == null) {
-            throw "Invalid Edge: couldn't find node $sourceID";
-          }
-          if (target == null) {
-            throw "Invalid Edge: couldn't find node $targetID";
-          }
+          final source = positions[edge.source];
+          final target = positions[edge.target];
+          if (source == null || target == null) continue;
 
-          var dx = source.x - target.x;
-          var dy = source.y - target.y;
-          var dist = sqrt(dx * dx + dy * dy) + 0.01;
-          final edgeLength = similarityToDistance(edge.similarity);
+          double dx = source.x - target.x;
+          double dy = source.y - target.y;
+          double dist = sqrt(
+            dx * dx + dy * dy,
+          ).clamp(minDistance, double.infinity);
+          final edgeLength =  edge.distance;
+          double force = attraction * (dist - edgeLength);
 
-          var force = attraction * (dist - edgeLength);
+          double fx = dx / dist * force;
+          double fy = dy / dist * force;
 
-          var fx = dx / dist * force;
-          var fy = dy / dist * force;
-
-          disp[sourceID] = Point(
-            disp[sourceID]!.x - fx,
-            disp[sourceID]!.y - fy,
-          );
-          disp[targetID] = Point(
-            disp[targetID]!.x + fx,
-            disp[targetID]!.y + fy,
-          );
+          disp[edge.source] = safeAdd(disp[edge.source]!, Point(-fx, -fy));
+          disp[edge.target] = safeAdd(disp[edge.target]!, Point(fx, fy));
         }
 
-        for (final e in positions.entries) {
-          final node = e.value;
-          final id = e.key;
-          positions[id] = Point(node.x + disp[id]!.x, node.y + disp[id]!.y);
+        for (final id in positions.keys) {
+          final pos = positions[id]!;
+          final d = disp[id]!;
+          positions[id] = safeAdd(pos, d);
         }
+
         controller.sendResult(ImMap.wrap({'progress': i}));
       }
+
       correctEdgeDistances(positions, edges);
+
       return ImMap.wrap({
         'positions': {
-          for (final e in positions.entries) e.key: e.value.toMap(),
+          for (final e in positions.entries)
+            e.key: {
+              'x': e.value.x.isFinite ? e.value.x : 0.0,
+              'y': e.value.y.isFinite ? e.value.y : 0.0,
+            },
         },
         'final': true,
       });

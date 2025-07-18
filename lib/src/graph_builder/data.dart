@@ -21,7 +21,7 @@ extension ForceGraphNodeDataExt on ForceGraphNodeDataMap {
 extension ForceGraphEdgeDataExt on ForceGraphEdgeDataMap {
   String get source => this['source'] as String;
   String get target => this['target'] as String;
-  num get similarity => this['similarity'] as num;
+  double get distance => this['distance'] as double;
 }
 
 extension PointExtension<N extends num> on Point<N> {
