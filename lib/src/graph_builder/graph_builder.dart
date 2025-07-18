@@ -5,7 +5,6 @@ import 'dart:collection';
 import 'dart:math';
 import 'package:force_graph/src/graph_builder/data.dart';
 import 'package:force_graph/src/graph_builder/distance.dart';
-import 'package:force_graph/src/graph_builder/mds.dart';
 import 'package:force_graph/src/graph_builder/spring_embedder.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 
@@ -97,8 +96,8 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
   late double _correctionFactor;
 
   int get iterations => _iterations;
-  double get repulsion => _repulsion!;
-  double get attraction => _attraction!;
+  double? get repulsion => _repulsion;
+  double? get attraction => _attraction;
   int get correctionIterations => _correctionIterations;
   double get correctionFactor => _correctionFactor;
 
@@ -108,22 +107,26 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
     parametersChanged();
   }
 
-  set repulsion(double value) {
-    assert(value > 0, 'repulsion > 0');
-    assert(
-      _attraction == null || value > _attraction!,
-      'repulsion must be greater than attraction',
-    );
+  set repulsion(double? value) {
+    if (value != null) {
+      assert(value > 0, 'repulsion > 0');
+      assert(
+        _attraction == null || value > _attraction!,
+        'repulsion must be greater than attraction',
+      );
+    }
     _repulsion = value;
     parametersChanged();
   }
 
-  set attraction(double value) {
-    assert(value > 0, 'attraction > 0');
-    assert(
-      _repulsion == null || value < _repulsion!,
-      'attraction must be less than repulsion',
-    );
+  set attraction(double? value) {
+    if (value != null) {
+      assert(value > 0, 'attraction > 0');
+      assert(
+        _repulsion == null || value < _repulsion!,
+        'attraction must be less than repulsion',
+      );
+    }
     _attraction = value;
     parametersChanged();
   }
@@ -141,10 +144,10 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
 
   SpringEmbedderGraphBuilder({
     int iterations = 800,
-    required double repulsion,
-    required double attraction,
-    int correctionIterations = 300,
-    double correctionFactor = 0.5,
+    double? repulsion,
+    double? attraction,
+    int correctionIterations = 0,
+    double correctionFactor = 0.01,
     super.debugLogs,
     super.maxDistance,
     super.minDistance,
@@ -184,8 +187,8 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
       'width': size.width,
       'height': size.height,
       'iterations': iterations,
-      'repulsion': repulsion,
-      'attraction': attraction,
+      'repulsion': repulsion ?? -1,
+      'attraction': attraction ?? -1,
       'correctionIterations': correctionIterations,
       'correctionFactor': correctionFactor,
       if (positionsToPreserve != null)
@@ -213,110 +216,6 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
 
   @override
   int? get totalStep => iterations + correctionIterations;
-}
-
-class MDSGraphBuilder extends ForceDirectedGraphBuilder {
-  late int _iterations;
-  double? _repulsion;
-  double? _attraction;
-
-  int get iterations => _iterations;
-  double get repulsion => _repulsion!;
-  double get attraction => _attraction!;
-
-  set iterations(int value) {
-    assert(value > 0, 'iterations must be greater than 0');
-    _iterations = value;
-    parametersChanged();
-  }
-
-  set repulsion(double value) {
-    assert(value > 0, 'repulsion must be greater than 0');
-    assert(
-      _attraction == null || value > _attraction!,
-      'repulsion must be greater than attraction',
-    );
-    _repulsion = value;
-    parametersChanged();
-  }
-
-  set attraction(double value) {
-    assert(value > 0, 'attraction must be greater than 0');
-    assert(
-      _repulsion == null || value > _repulsion!,
-      'attraction must be greater than repulsion',
-    );
-    _attraction = value;
-    parametersChanged();
-  }
-
-  MDSGraphBuilder({
-    required int iterations,
-    required double repulsion,
-    required double attraction,
-    super.debugLogs,
-    super.maxDistance,
-    super.minDistance,
-  }) {
-    this.iterations = iterations;
-    this.repulsion = repulsion;
-    this.attraction = attraction;
-  }
-
-  @override
-  Future<void> $_performLayout(
-    Iterable<ForceGraphNodeDataMap> nodes,
-    Size size, [
-    ValueChanged<int>? progressCallback,
-    Map<String, Point<double>>? positionsToPreserve,
-  ]) async {
-    final inputData = <String, dynamic>{
-      'nodes': nodes,
-      'width': size.width,
-      'height': size.height,
-      'iterations': iterations,
-      'repulsion': repulsion,
-      'attraction': attraction,
-      if (positionsToPreserve != null)
-        'positionsToPreserve': _jsonifyPoints(positionsToPreserve),
-    };
-
-    final Map result = await isolate.compute(
-      ImMap.wrap(inputData),
-      callback: (value) {
-        if (value is Map) {
-          if (value.containsKey('final')) {
-            return true;
-          }
-          final progress = value['progress'];
-          if (progress != null) {
-            progressCallback?.call(progress);
-            return false;
-          }
-        }
-        return false;
-      },
-    );
-    _positions.addAll(_dartifyPoints(result['positions'] as Map));
-  }
-
-  @override
-  IsolateManager createIsolate() {
-    return IsolateManager.createCustom(
-      performMDSLayoutIsolate,
-      isDebug: debugLogs,
-      converter: (value) {
-        if (value is ImType) {
-          return value.unwrap;
-        }
-        return value;
-      },
-      workerName: 'assets/packages/force_graph/web/performMDSLayoutIsolate',
-    );
-  }
-
-  @override
-  int? get totalStep => iterations;
 }
 
 Map<String, Map<String, double>> _jsonifyPoints(
@@ -383,6 +282,7 @@ abstract class ForceDirectedGraphBuilder {
     if (minDistance != null) {
       this.minDistance = minDistance;
     }
+
     if (maxDistance != null) {
       this.maxDistance = maxDistance;
     }
@@ -391,6 +291,8 @@ abstract class ForceDirectedGraphBuilder {
   IsolateManager? _isolate;
 
   IsolateManager get isolate => _isolate ??= createIsolate();
+
+  bool get hasMinDistance => _minDistance != null;
 
   IsolateManager createIsolate();
 
@@ -408,6 +310,17 @@ abstract class ForceDirectedGraphBuilder {
     Map<String, Point<double>>? positionsToPreserve,
   ]);
 
+  double _calculateMaxDistance(
+    double minDistance,
+    int nodeCount,
+    double width,
+    double height,
+  ) {
+    double baseDistance = minDistance * (1 + 0.5 * sqrt(nodeCount));
+    double maxAllowed = min(width, height) * 0.3;
+    return min(baseDistance, maxAllowed);
+  }
+
   Future<void> performLayout(
     Iterable<ForceGraphNodeData> nodes,
     Size size, [
@@ -416,8 +329,12 @@ abstract class ForceDirectedGraphBuilder {
     try {
       _clear();
       _nodes.addAll(nodes);
-      _minDistance ??= 2;
-      _maxDistance ??= minDistance + log(nodes.length + 1) * 5;
+      _maxDistance ??= _calculateMaxDistance(
+        minDistance,
+        nodes.length,
+        size.width,
+        size.height,
+      );
       await $_performLayout(_nodesToMap(nodes), size, progressCallback);
       _size = size;
       _parametersChanged = false;
@@ -468,18 +385,25 @@ abstract class ForceDirectedGraphBuilder {
     return UnmodifiableMapView(result);
   }
 
-  
+  // double _similarityToDistance(double sim) {
+  //   sim = sim.clamp(0.0, 1.0);
+  //   final distance =
+  //       minDistance + (maxDistance - minDistance) * pow(1.0 - sim, 2.0);
+  //   return distance;
+  // }
 
-  double similarityToDistance(double sim) {
-    sim = sim.clamp(0.0001, 1.0);
-    return (maxDistance - minDistance) * (1.0 - sim) + minDistance;
+  double _similarityToDistance(double sim) {
+    sim = sim.clamp(0.0, 1.0);
+    const double logBase = 5.0;
+    final normalized = 1.0 - (log(1.0 + sim * (logBase - 1.0)) / log(logBase));
+    return minDistance + (maxDistance - minDistance) * normalized;
   }
 
   ForceGraphEdgeDataMap _edgeToMap(ForceGraphEdgeData edge) {
     return {
       'source': edge.source,
       'target': edge.target,
-      'distance': similarityToDistance(edge.similarity),
+      'distance': _similarityToDistance(edge.similarity),
     };
   }
 

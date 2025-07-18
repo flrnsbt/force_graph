@@ -297,6 +297,10 @@ class ForceGraphController extends ChangeNotifier {
       _loadingTotalStep = _graphBuilder.totalStep;
 
       if (_rawData.isNotEmpty) {
+        if (!_graphBuilder.hasMinDistance) {
+          final nodeBiggestRadius = _getNodeBiggestRadius(_rawData);
+          _graphBuilder.minDistance = nodeBiggestRadius * 2.5;
+        }
         if (notifyReadyStatusChange) {
           _isReady = false;
           _isLoading = true;
@@ -411,6 +415,8 @@ class ForceGraphController extends ChangeNotifier {
 
   final __onHovereds = <void Function(ForceGraphNode?)>[];
 
+  final __onSecondaryTaps = <void Function(ForceGraphNode, Offset)>[];
+
   void _onHover(ForceGraphNode? node) {
     for (final f in __onHovereds) {
       f(node);
@@ -423,6 +429,12 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void _onSecondaryTap(ForceGraphNode node, Offset screenPos) {
+    for (final f in __onSecondaryTaps) {
+      f(node, screenPos);
+    }
+  }
+
   void _onSelectionChanged() {
     final s = _nodes.values.where((node) => node.selected).toList();
     for (final f in __onSelectionChangeds) {
@@ -432,6 +444,18 @@ class ForceGraphController extends ChangeNotifier {
 
   void addOnHoverListener(void Function(ForceGraphNode?) onHover) {
     __onHovereds.add(onHover);
+  }
+
+  void addOnSecondaryTapListener(
+    void Function(ForceGraphNode, Offset) onSecondaryTap,
+  ) {
+    __onSecondaryTaps.add(onSecondaryTap);
+  }
+
+  void removeOnSecondaryTapListener(
+    void Function(ForceGraphNode, Offset) onSecondaryTap,
+  ) {
+    __onSecondaryTaps.remove(onSecondaryTap);
   }
 
   void removeOnHoverListener(void Function(ForceGraphNode?) onHover) {
@@ -465,6 +489,7 @@ class ForceGraphController extends ChangeNotifier {
     _selectedNodeIds.clear();
     _joints.clear();
     _nodes.clear();
+    _onHover(null);
     _onSelectionChanged();
   }
 
@@ -493,19 +518,19 @@ class ForceGraphController extends ChangeNotifier {
     return _completer!.future.whenComplete(() => null);
   }
 
-  Future<void> addNodes(
-    List<ForceGraphNodeData> nodes, {
-    bool notifyReadyStatusChange = true,
-  }) async {
-    final worldSize = viewportController.worldSize;
+  // Future<void> addNodes(
+  //   List<ForceGraphNodeData> nodes, {
+  //   bool notifyReadyStatusChange = true,
+  // }) async {
+  //   final worldSize = viewportController.worldSize;
 
-    await _graphBuilder.loadMore(nodes, worldSize, (progress) {
-      _loadingProgressStep = progress;
-      notifyListeners();
-    });
-    _clear();
-    await _loadData(_graphBuilder.getNodes());
-  }
+  //   await _graphBuilder.loadMore(nodes, worldSize, (progress) {
+  //     _loadingProgressStep = progress;
+  //     notifyListeners();
+  //   });
+  //   _clear();
+  //   await _loadData(_graphBuilder.getNodes());
+  // }
 
   final ForceDirectedGraphBuilder _graphBuilder;
 
@@ -522,8 +547,9 @@ class ForceGraphController extends ChangeNotifier {
   Future<Map<ForceGraphNodeData, Vector2>> _performLayout(
     List<ForceGraphNodeData> nodes,
   ) async {
-    final worldSize = viewportController.worldSize;
-    await _graphBuilder.performLayout(nodes, worldSize, (progress) {
+    await _graphBuilder.performLayout(nodes, viewportController.screenSize, (
+      progress,
+    ) {
       _loadingProgressStep = progress;
       notifyListeners();
     });
@@ -756,6 +782,16 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   Timer? _scheduleAutoMove;
+
+  double _getNodeBiggestRadius(List<ForceGraphNodeData> nodes) {
+    double biggestRadius = 0;
+    for (final node in nodes) {
+      if (node.radius > biggestRadius) {
+        biggestRadius = node.radius;
+      }
+    }
+    return biggestRadius;
+  }
 }
 
 extension on Joint {
@@ -1340,7 +1376,7 @@ class ForceGraphNode {
     double radius = data.radius;
 
     if (hovered) {
-      radius *= 1.5;
+      radius *= 1.25;
     }
     final bool selected = this.selected;
     bool hasBorder = selected || style.colorBorder != null;
@@ -1445,6 +1481,13 @@ class ForceGraphNode {
       case _ForceDirection.right:
         return Vector2(1, 0);
     }
+  }
+
+  void onSecondaryTap(Offset screenPos) {
+    if (hovered) {
+      hovered = false;
+    }
+    _controller._onSecondaryTap(this, screenPos);
   }
 }
 

@@ -1,6 +1,6 @@
 name: force_graph
 description: "Forge2D based force graph with multiple graph layout algorithms (MDS, Spring Embedder, Distance based) and realistic physics."
-version: 0.3.0
+version: 0.3.1
 homepage: https://github.com/flrnsbt/force_graph
 
 environment:
@@ -22,6 +22,5 @@ dev_dependencies:
 
 flutter:
   assets: 
-    - web/performMDSLayoutIsolate.js
     - web/performSpringEmbedderLayoutIsolate.js
     - web/performDistanceLayoutIsolate.js

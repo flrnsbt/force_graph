@@ -25,6 +25,7 @@ class ForceGraphWidget extends StatefulWidget {
     this.defaultControlBarForegroundColor,
     this.defaultControlBarBackgroundColor,
     this.onSelectionChanged,
+    this.onSecondaryTappedNode,
     this.defaultControlBarAutoHide,
     this.defaultControlBarOpacityChangesEnabled = true,
     this.selectionOverlayColor,
@@ -61,6 +62,7 @@ class ForceGraphWidget extends StatefulWidget {
   final bool? defaultControlBarAutoHide;
   final bool defaultControlBarOpacityChangesEnabled;
   final Widget Function(BuildContext context, Object error) errorBuilder;
+  final void Function(ForceGraphNode, Offset)? onSecondaryTappedNode;
 
   static Widget _kDefaultLoadingBuilder(
     BuildContext context,
@@ -108,6 +110,12 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         widget.onSelectionChanged!,
       );
     }
+
+    if (widget.onSecondaryTappedNode != null) {
+      widget.controller.addOnSecondaryTapListener(
+        widget.onSecondaryTappedNode!,
+      );
+    }
   }
 
   void _refreshUI() {
@@ -127,6 +135,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       node.onTap();
     } else {
       widget.controller.clearSelection();
+    }
+  }
+
+  void _onSecondaryTap(Offset screenPos) {
+    final worldPos = _screenToWorld(screenPos);
+    final node = widget.controller.findBodyAt(worldPos);
+    if (node != null) {
+      node.onSecondaryTap(screenPos);
     }
   }
 
@@ -207,6 +223,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             child: GestureDetector(
               supportedDevices: {...PointerDeviceKind.values},
               onTapUp: (details) => _tapUp(details.localPosition),
+              onSecondaryTapUp: (details) =>
+                  _onSecondaryTap(details.localPosition),
               onScaleStart: widget.controller.onScaleStart,
               onScaleUpdate: widget.controller.onScaleUpdate,
               onScaleEnd: widget.controller.onScaleEnd,
@@ -287,6 +305,11 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
   @override
   void dispose() {
+    if (widget.onSecondaryTappedNode != null) {
+      widget.controller.removeOnSecondaryTapListener(
+        widget.onSecondaryTappedNode!,
+      );
+    }
     if (widget.onSelectionChanged != null) {
       widget.controller.removeOnSelectionChangedListener(
         widget.onSelectionChanged!,
