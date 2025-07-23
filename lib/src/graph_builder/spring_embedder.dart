@@ -11,8 +11,8 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
     onEvent: (controller, ImMap input) {
       final unwrappedInput = input.toUnwrappedMap();
       final iterations = unwrappedInput['iterations'] as int;
-      double? repulsion = unwrappedInput['repulsion'] as double;
-      double? attraction = unwrappedInput['attraction'] as double;
+      double? repulsion = unwrappedInput['repulsion'] as double?;
+      double? attraction = unwrappedInput['attraction'] as double?;
       if (repulsion == -1) repulsion = null;
       if (attraction == -1) attraction = null;
       final width = unwrappedInput['width'] as double;

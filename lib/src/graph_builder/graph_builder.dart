@@ -380,7 +380,11 @@ abstract class ForceDirectedGraphBuilder {
   Map<ForceGraphNodeData, Vector2> getNodes() {
     final result = <ForceGraphNodeData, Vector2>{};
     for (final node in _nodes) {
-      result[node] = _positions[node.id]!.toVector2();
+      final position = _positions[node.id];
+      if (position == null) {
+        throw Exception('No position found for node ${node.id}');
+      }
+      result[node] = position.toVector2();
     }
     return UnmodifiableMapView(result);
   }
