@@ -303,6 +303,9 @@ class ForceGraphController extends ChangeNotifier {
         final int edgeID = ForceGraphEdgeData.getID(nodeID, otherBodyID);
         edges[edgeID] = _joints[edgeID]!.data;
       }
+      if (node.selected) {
+        node.selected = false;
+      }
       world.destroyBody(body);
 
       final connectableNodes = [
@@ -343,6 +346,9 @@ class ForceGraphController extends ChangeNotifier {
 
             world.createJoint(joint);
           } else {
+            if (node.selected) {
+              node.selected = false;
+            }
             world.destroyBody(node.body);
             removedNodeIDs.add(node.iD);
           }
@@ -494,7 +500,8 @@ class ForceGraphController extends ChangeNotifier {
 
   final __onHovereds = <void Function(ForceGraphNode?)>[];
 
-  final __onSecondaryTaps = <void Function(ForceGraphNode, Offset)>[];
+  final __onNodeSecondaryTaps = <void Function(ForceGraphNode, Offset)>[];
+  final __onSecondaryTaps = <void Function(Offset)>[];
 
   void _onHover(ForceGraphNode? node) {
     for (final f in __onHovereds) {
@@ -508,9 +515,15 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void _onSecondaryTap(ForceGraphNode node, Offset screenPos) {
-    for (final f in __onSecondaryTaps) {
+  void _onNodeSecondaryTap(ForceGraphNode node, Offset screenPos) {
+    for (final f in __onNodeSecondaryTaps) {
       f(node, screenPos);
+    }
+  }
+
+  void _onSecondaryTap(Offset screenPos) {
+    for (final f in __onSecondaryTaps) {
+      f(screenPos);
     }
   }
 
@@ -525,16 +538,26 @@ class ForceGraphController extends ChangeNotifier {
     __onHovereds.add(onHover);
   }
 
-  void addOnSecondaryTapListener(
-    void Function(ForceGraphNode, Offset) onSecondaryTap,
-  ) {
+  void addOnSecondaryTapListener(void Function(Offset offset) onSecondaryTap) {
     __onSecondaryTaps.add(onSecondaryTap);
   }
 
   void removeOnSecondaryTapListener(
-    void Function(ForceGraphNode, Offset) onSecondaryTap,
+    void Function(Offset offset) onSecondaryTap,
   ) {
     __onSecondaryTaps.remove(onSecondaryTap);
+  }
+
+  void addNodeOnSecondaryTapListener(
+    void Function(ForceGraphNode, Offset) onSecondaryTap,
+  ) {
+    __onNodeSecondaryTaps.add(onSecondaryTap);
+  }
+
+  void removeNodeOnSecondaryTapListener(
+    void Function(ForceGraphNode, Offset) onSecondaryTap,
+  ) {
+    __onNodeSecondaryTaps.remove(onSecondaryTap);
   }
 
   void removeOnHoverListener(void Function(ForceGraphNode?) onHover) {
@@ -949,6 +972,28 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       case PhysicalKeyboardKey.arrowRight:
         viewportController.moveBy(Offset(-factor, 0));
         break;
+    }
+  }
+
+  void onTapUp(TapUpDetails details) {
+    final screenPos = details.localPosition;
+    final worldPos = viewportController.screenToWorld(screenPos);
+    final node = findBodyAt(worldPos);
+    if (node != null) {
+      node.onTap();
+    } else {
+      clearSelection();
+    }
+  }
+
+  void onSecondaryTapUp(TapUpDetails details) {
+    final screenPos = details.localPosition;
+    final worldPos = viewportController.screenToWorld(screenPos);
+    final node = findBodyAt(worldPos);
+    if (node != null) {
+      node.onSecondaryTap(screenPos);
+    } else {
+      _onSecondaryTap(screenPos);
     }
   }
 
@@ -1570,7 +1615,7 @@ class ForceGraphNode {
     if (hovered) {
       hovered = false;
     }
-    _controller._onSecondaryTap(this, screenPos);
+    _controller._onNodeSecondaryTap(this, screenPos);
   }
 }
 

@@ -18,10 +18,11 @@ class ForceGraphWidget extends StatefulWidget {
     this.nodeTooltipBuilder,
     this.edgeTooltipBuilder,
     this.nodeTooltipSpacing = 15,
-    this.offsetUpdater,
+    this.offsetCorrection,
     this.edgeTooltipSpacing = 20,
     this.customControlBarBuilder,
     this.focusNode,
+    this.contextMenuBuilder,
     this.defaultControlBarForegroundColor,
     this.defaultControlBarBackgroundColor,
     this.onSelectionChanged,
@@ -35,10 +36,16 @@ class ForceGraphWidget extends StatefulWidget {
   final Color? selectionOverlayColor;
   final ForceGraphController controller;
   final bool showControlBar;
-
+  final Widget Function(
+    BuildContext context,
+    ForceGraphController controller,
+    Offset position,
+    VoidCallback dismiss,
+  )?
+  contextMenuBuilder;
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
-  final Offset Function(Offset position)? offsetUpdater;
+  final Offset Function(Offset position)? offsetCorrection;
   final Widget Function(BuildContext context, ForceGraphEdge edge)?
   edgeTooltipBuilder;
   final Widget Function(BuildContext context, ForceGraphController controller)?
@@ -112,37 +119,27 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
 
     if (widget.onSecondaryTappedNode != null) {
-      widget.controller.addOnSecondaryTapListener(
+      widget.controller.addNodeOnSecondaryTapListener(
         widget.onSecondaryTappedNode!,
       );
+    }
+
+    widget.controller.addOnSecondaryTapListener(_onSecondaryTap);
+  }
+
+  Offset? _secondaryTapPosition;
+  void _onSecondaryTap(Offset offset) {
+    if (_secondaryTapPosition != offset) {
+      _secondaryTapPosition = offset;
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
   void _refreshUI() {
     if (mounted) {
       setState(() {});
-    }
-  }
-
-  Vector2 _screenToWorld(Offset pos) {
-    return viewportController.screenToWorld(pos);
-  }
-
-  void _tapUp(Offset screenPos) {
-    final worldPos = _screenToWorld(screenPos);
-    final node = widget.controller.findBodyAt(worldPos);
-    if (node != null) {
-      node.onTap();
-    } else {
-      widget.controller.clearSelection();
-    }
-  }
-
-  void _onSecondaryTap(Offset screenPos) {
-    final worldPos = _screenToWorld(screenPos);
-    final node = widget.controller.findBodyAt(worldPos);
-    if (node != null) {
-      node.onSecondaryTap(screenPos);
     }
   }
 
@@ -196,7 +193,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         ),
       ),
     );
-    if (isReady) {
+    final bool isLoading = widget.controller.isLoading;
+
+    if (isReady || isLoading || hasError) {
       child = KeyboardListener(
         focusNode: _focusNode,
         autofocus: true,
@@ -216,9 +215,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             onPointerSignal: widget.controller.onPointerSignal,
             child: GestureDetector(
               supportedDevices: {...PointerDeviceKind.values},
-              onTapUp: (details) => _tapUp(details.localPosition),
-              onSecondaryTapUp: (details) =>
-                  _onSecondaryTap(details.localPosition),
+              onTapUp: widget.controller.onTapUp,
+              onSecondaryTapUp: widget.controller.onSecondaryTapUp,
               onScaleStart: widget.controller.onScaleStart,
               onScaleUpdate: widget.controller.onScaleUpdate,
               onScaleEnd: widget.controller.onScaleEnd,
@@ -229,8 +227,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         ),
       );
     }
-
-    final bool isLoading = widget.controller.isLoading;
 
     return ClipRect(
       child: Stack(
@@ -300,7 +296,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   @override
   void dispose() {
     if (widget.onSecondaryTappedNode != null) {
-      widget.controller.removeOnSecondaryTapListener(
+      widget.controller.removeNodeOnSecondaryTapListener(
         widget.onSecondaryTappedNode!,
       );
     }
@@ -319,6 +315,32 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   Widget _buildTooltips() {
+    if (_secondaryTapPosition != null && widget.contextMenuBuilder != null) {
+      void dimiss() {
+        _secondaryTapPosition = null;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+
+      return TooltipPositionedWidget(
+        target: _secondaryTapPosition!,
+        child: TapRegion(
+          onTapOutside: (event) {
+            dimiss();
+          },
+          child: Material(
+            type: MaterialType.transparency,
+            child: widget.contextMenuBuilder!(
+              context,
+              widget.controller,
+              _secondaryTapPosition!,
+              dimiss,
+            ),
+          ),
+        ),
+      );
+    }
     final edge = widget.controller.hoveredEdge;
     if (edge != null && widget.edgeTooltipBuilder != null) {
       // final positionBodyA = viewportController.worldToScreen(
@@ -332,8 +354,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       if (offset == null) {
         return const SizedBox.shrink();
       }
-      if (widget.offsetUpdater != null) {
-        offset = widget.offsetUpdater!(offset);
+      if (widget.offsetCorrection != null) {
+        offset = widget.offsetCorrection!(offset);
       }
       return TooltipPositionedWidget(
         target: offset,
@@ -347,8 +369,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     final node = widget.controller.hoveredNode;
     if (node != null && widget.nodeTooltipBuilder != null) {
       Offset position = viewportController.worldToScreen(node.position);
-      if (widget.offsetUpdater != null) {
-        position = widget.offsetUpdater!(position);
+      if (widget.offsetCorrection != null) {
+        position = widget.offsetCorrection!(position);
       }
       return TooltipPositionedWidget(
         target: position,
