@@ -205,12 +205,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
           cursor: getCursor(),
           onExit: (event) {
             widget.controller.updateHover(null);
-            for (final node in nodes) {
-              node.hovered = false;
-            }
-            for (final joint in joints) {
-              joint.hovered = false;
-            }
           },
           onEnter: (event) {
             widget.controller.updateHover(event.localPosition);

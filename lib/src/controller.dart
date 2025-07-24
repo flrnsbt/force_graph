@@ -343,7 +343,8 @@ class ForceGraphController extends ChangeNotifier {
     return _init();
   }
 
-  ForceGraphNode? findBodyAt(Vector2 worldPoint) {
+  ForceGraphNode? findBodyAt(Vector2? worldPoint) {
+    if (worldPoint == null) return null;
     for (final node in _nodes.values) {
       final fixture = node.body.fixtures.firstOrNull;
       if (fixture != null && fixture.testPoint(worldPoint)) return node;
@@ -351,45 +352,38 @@ class ForceGraphController extends ChangeNotifier {
     return null;
   }
 
-  ForceGraphEdge? findJointAt(Vector2 mouseWorldPosition) {
+  ForceGraphEdge? findJointAt(Vector2? mouseWorldPosition) {
+    if (mouseWorldPosition == null) return null;
     for (final j in joints) {
       final anchorA = j.joint.anchorA;
       final anchorB = j.joint.anchorB;
 
       final delta = anchorB - anchorA;
 
-      final start = anchorA + delta * 0.2;
-      final end = anchorA + delta * 0.8;
+      final start = anchorA + delta * 0.1;
+      final end = anchorA + delta * 0.9;
 
       final perp = Vector2(-delta.y, delta.x)..normalize();
       final thickness = 0.1;
       perp.scale(thickness);
 
-      final p1 = start + perp;
-      final p2 = start - perp;
-      final p3 = end - perp;
-      final p4 = end + perp;
-
-      if (_pointInQuad(mouseWorldPosition, [p1, p2, p3, p4])) {
+      if (_pointNearLine(mouseWorldPosition, start, end, thickness)) {
         return j;
       }
     }
     return null;
   }
 
-  bool _pointInQuad(Vector2 p, List<Vector2> quad) {
-    assert(quad.length == 4);
-    int sign(Vector2 a, Vector2 b, Vector2 c) {
-      return ((a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y)).sign
-          .toInt();
-    }
+  bool _pointNearLine(Vector2 p, Vector2 a, Vector2 b, double maxDist) {
+    final ap = p - a;
+    final ab = b - a;
+    final abLen = ab.length;
+    final proj = ap.dot(ab) / abLen;
+    if (proj < 0 || proj > abLen) return false;
 
-    final s1 = sign(p, quad[0], quad[1]);
-    final s2 = sign(p, quad[1], quad[2]);
-    final s3 = sign(p, quad[2], quad[3]);
-    final s4 = sign(p, quad[3], quad[0]);
-
-    return (s1 == s2 && s2 == s3 && s3 == s4);
+    final nearest = a + ab.normalized() * proj;
+    final dist = (p - nearest).length;
+    return dist <= maxDist;
   }
 
   final World world = World(Vector2.zero());
@@ -726,7 +720,7 @@ class ForceGraphController extends ChangeNotifier {
   bool get canAutoMove =>
       isHovering && !isDraggingNode && !isPanning && !isSelecting;
 
-  void hoverNode(
+  bool hoverNode(
     String? nodeID, {
     bool animateToCenter = false,
     bool programatical = true,
@@ -745,14 +739,16 @@ class ForceGraphController extends ChangeNotifier {
       }
       _programaticalHover = programatical;
       $_hoveredNodeID = nodeID;
+      return true;
     }
+    return false;
   }
 
   int? $_hoveredEdgeID;
 
   ForceGraphEdge? get hoveredEdge => _joints[$_hoveredEdgeID];
 
-  void hoverEdge(int? edgeID, {bool programatical = true}) {
+  bool hoverEdge(int? edgeID, {bool programatical = true}) {
     if (edgeID != $_hoveredEdgeID) {
       if ($_hoveredEdgeID != null) {
         final edge = _joints[$_hoveredEdgeID]!;
@@ -764,7 +760,9 @@ class ForceGraphController extends ChangeNotifier {
       }
       _programaticalHover = programatical;
       $_hoveredEdgeID = edgeID;
+      return true;
     }
+    return false;
   }
 
   void _updateAutoMoveStatus() {
@@ -872,15 +870,15 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
   void updateHover(Offset? position) {
     _scheduleAutoMove?.cancel();
 
-    _hoverPosition = position;
+    Vector2? worldPos;
     if (position != null) {
-      final worldPos = viewportController.screenToWorld(position);
-      final node = findBodyAt(worldPos);
-      hoverNode(node?.iD, programatical: false);
+      worldPos = viewportController.screenToWorld(position);
+    }
 
-      final joint = findJointAt(worldPos);
-      hoverEdge(joint?.data.iD, programatical: false);
+    if (hoverNode(findBodyAt(worldPos)?.iD, programatical: false) ||
+        hoverEdge(findJointAt(worldPos)?.data.iD, programatical: false)) {
       _updateAutoMoveStatus();
+      _hoverPosition = position;
     }
   }
 
