@@ -326,10 +326,8 @@ class ForceGraphController extends ChangeNotifier {
               ..dampingRatio = jointDamping;
             final oldClosestNodeEdge =
                 edges[ForceGraphEdgeData.getID(nodeID, closestNode.iD)]!;
-            final double similarity = pow(
-              oldEdge.similarity,
-              oldClosestNodeEdge.similarity,
-            ).toDouble();
+            final double similarity =
+                oldEdge.similarity * oldClosestNodeEdge.similarity;
             final weight = min(oldEdge.weight, oldClosestNodeEdge.weight);
             final style = oldEdge.style;
             final joint = DistanceJoint(jointDef);
