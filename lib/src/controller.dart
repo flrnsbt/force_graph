@@ -288,6 +288,89 @@ class ForceGraphController extends ChangeNotifier {
     node._animateCenter();
   }
 
+  Set<String> removeNode(String nodeID) {
+    final removedNodeIDs = <String>{};
+    final node = _nodes.remove(nodeID);
+    if (node != null) {
+      removedNodeIDs.add(nodeID);
+      final body = node.body;
+      final connectedNodes = <ForceGraphNode>{};
+      final edges = <int, ForceGraphEdgeData>{};
+      for (final edge in node.body.joints) {
+        final otherBody = edge.otherBody(body);
+        final otherBodyID = (otherBody.userData as ForceGraphNodeData).iD;
+        connectedNodes.add(_nodes[otherBodyID]!);
+        final int edgeID = ForceGraphEdgeData.getID(nodeID, otherBodyID);
+        edges[edgeID] = _joints[edgeID]!.data;
+      }
+      world.destroyBody(body);
+
+      final connectableNodes = [
+        for (final node in connectedNodes)
+          if (node.body.joints.isNotEmpty) node,
+      ];
+
+      for (final node in connectedNodes) {
+        final oldEdge = edges[ForceGraphEdgeData.getID(nodeID, node.iD)]!;
+        if (node.body.joints.isEmpty) {
+          final closestNode = _getClosestNode(node, connectableNodes);
+          if (closestNode != null) {
+            final jointDef = DistanceJointDef()
+              ..initialize(
+                node.body,
+                closestNode.body,
+                node.body.position,
+                closestNode.position,
+              )
+              ..frequencyHz = jointFrequency
+              ..dampingRatio = jointDamping;
+            final oldClosestNodeEdge =
+                edges[ForceGraphEdgeData.getID(nodeID, closestNode.iD)]!;
+            final double similarity = pow(
+              oldEdge.similarity,
+              oldClosestNodeEdge.similarity,
+            ).toDouble();
+            final weight = min(oldEdge.weight, oldClosestNodeEdge.weight);
+            final style = oldEdge.style;
+            final joint = DistanceJoint(jointDef);
+            final data = ForceGraphEdgeData(
+              node.iD,
+              closestNode.iD,
+              similarity,
+              weight,
+              style,
+            );
+            final edge = ForceGraphEdge(joint, data, this);
+            _joints[data.iD] = edge;
+
+            world.createJoint(joint);
+          } else {
+            world.destroyBody(node.body);
+            removedNodeIDs.add(node.iD);
+          }
+        }
+      }
+    }
+    return removedNodeIDs;
+  }
+
+  ForceGraphNode? _getClosestNode(
+    ForceGraphNode node,
+    Iterable<ForceGraphNode> connectedNodes,
+  ) {
+    double minDist = double.maxFinite;
+    ForceGraphNode? closestBody;
+    for (final otherNode in connectedNodes) {
+      if (otherNode == node) continue;
+      final dist = node.position.distanceTo(otherNode.position);
+      if (dist < minDist) {
+        minDist = dist;
+        closestBody = otherNode;
+      }
+    }
+    return closestBody;
+  }
+
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
     try {
       _clear();
@@ -297,8 +380,12 @@ class ForceGraphController extends ChangeNotifier {
       _loadingTotalStep = _graphBuilder.totalStep;
 
       if (_rawData.isNotEmpty) {
+        final data = <ForceGraphNodeData>[];
+        for (final d in _rawData) {
+          data.add(d.deepCopy());
+        }
         if (!_graphBuilder.hasMinDistance) {
-          final nodeBiggestRadius = _getNodeBiggestRadius(_rawData);
+          final nodeBiggestRadius = _getNodeBiggestRadius(data);
           _graphBuilder.minDistance = nodeBiggestRadius * 2.5;
         }
         if (notifyReadyStatusChange) {
@@ -306,7 +393,7 @@ class ForceGraphController extends ChangeNotifier {
           _isLoading = true;
           notifyListeners();
         }
-        final processedNodes = await _performLayout(_rawData);
+        final processedNodes = await _performLayout(data);
         await _loadData(processedNodes);
 
         _startTicker();
@@ -559,7 +646,7 @@ class ForceGraphController extends ChangeNotifier {
         linearDamping: nodeLinearDamping,
         enableNodesAutoMove: enableNodesAutoMove,
       );
-      _nodes[e.key.id] = body;
+      _nodes[e.key.iD] = body;
     }
     double minSpacing = double.infinity;
     for (final edge in _graphBuilder.edges) {
@@ -1248,7 +1335,7 @@ class ForceGraphNode {
 
   set position(Vector2 pos) => body.setTransform(pos, body.angle);
 
-  String get iD => data.id;
+  String get iD => data.iD;
 
   ForceGraphNode(this.body, this._controller, this.enableAutoMove);
 
@@ -1262,7 +1349,7 @@ class ForceGraphNode {
     bool enableNodesAutoMove = false,
   }) {
     if (position.isInfinite || position.isNaN) {
-      throw 'Invalid position for node ${node.id}: $position';
+      throw 'Invalid position for node ${node.iD}: $position';
     }
     final world = controller.world;
     final nodeDef = BodyDef(
@@ -1509,10 +1596,12 @@ class _DestroyListener implements DestroyListener {
 
   @override
   void onDestroyJoint(Joint joint) {
-    final bodyAID = (joint.bodyA.userData as ForceGraphNodeData).id;
-    final bodyBID = (joint.bodyB.userData as ForceGraphNodeData).id;
+    final bodyAID = (joint.bodyA.userData as ForceGraphNodeData).iD;
+    final bodyBID = (joint.bodyB.userData as ForceGraphNodeData).iD;
     final iD = ForceGraphEdgeData.getID(bodyAID, bodyBID);
     controller._joints.remove(iD);
+    controller._nodes[bodyAID]?.data.removeEdge(iD);
+    controller._nodes[bodyBID]?.data.removeEdge(iD);
   }
 }
 

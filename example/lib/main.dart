@@ -138,7 +138,7 @@ List<ForceGraphNodeData> generateMockGraph({
       final targetIndex = rand.nextInt(nodeCount);
       final targetId = ids[targetIndex];
 
-      if (targetId == node.id || connected.contains(targetId)) continue;
+      if (targetId == node.iD || connected.contains(targetId)) continue;
       connected.add(targetId);
 
       final similarity = rand.nextDouble() * 0.9 + 0.1; // 0.4 - 1.0
@@ -146,7 +146,7 @@ List<ForceGraphNodeData> generateMockGraph({
 
       node.edges.add(
         ForceGraphEdgeData.from(
-          source: node.id,
+          source: node.iD,
           target: targetId,
           similarity: similarity,
           weight: weight,

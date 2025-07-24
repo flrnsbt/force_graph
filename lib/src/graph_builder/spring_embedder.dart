@@ -36,7 +36,6 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final double initialTemperature = min(width, height) * 0.01;
       final double finalTemperature = 0.1;
 
-
       final double repulsionFalloff = 3.0; // How quickly repulsion falls off
 
       // Calculate node degrees for edge weighting

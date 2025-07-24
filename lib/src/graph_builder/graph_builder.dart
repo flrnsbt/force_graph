@@ -335,6 +335,7 @@ abstract class ForceDirectedGraphBuilder {
         size.width,
         size.height,
       );
+
       await $_performLayout(_nodesToMap(nodes), size, progressCallback);
       _size = size;
       _parametersChanged = false;
@@ -380,9 +381,9 @@ abstract class ForceDirectedGraphBuilder {
   Map<ForceGraphNodeData, Vector2> getNodes() {
     final result = <ForceGraphNodeData, Vector2>{};
     for (final node in _nodes) {
-      final position = _positions[node.id];
+      final position = _positions[node.iD];
       if (position == null) {
-        throw Exception('No position found for node ${node.id}');
+        throw Exception('No position found for node ${node.iD}');
       }
       result[node] = position.toVector2();
     }
@@ -419,7 +420,7 @@ abstract class ForceDirectedGraphBuilder {
         edges.add(edge);
         edgesJSON.add(_edgeToMap(edge));
       }
-      nodesJSON.add({'id': node.id, 'edges': edgesJSON});
+      nodesJSON.add({'id': node.iD, 'edges': edgesJSON});
     }
     return nodesJSON;
   }

@@ -70,10 +70,7 @@ void performDistanceLayoutIsolate(dynamic input) {
           positions[first.source] = const Point(0, 0);
         }
         if (!positions.containsKey(first.target)) {
-          positions[first.target] = Point(
-            first.distance,
-            0,
-          );
+          positions[first.target] = Point(first.distance, 0);
         }
         placed.addAll([first.source, first.target]);
 
@@ -189,4 +186,3 @@ void performDistanceLayoutIsolate(dynamic input) {
     },
   );
 }
-

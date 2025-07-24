@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:forge2d/forge2d.dart';
 
 class ForceGraphNodeData {
-  final String id;
+  final String iD;
   final List<ForceGraphEdgeData> edges;
   final GraphComponentStyle style;
   final String title;
   final Object? data;
   final double radius;
   const ForceGraphNodeData(
-    this.id,
+    this.iD,
     this.edges,
     this.style,
     this.title,
@@ -30,16 +30,24 @@ class ForceGraphNodeData {
     return ForceGraphNodeData(id, edges, style, title, data, radius);
   }
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is ForceGraphNodeData && id == other.id;
+  ForceGraphNodeData deepCopy() {
+    return ForceGraphNodeData(iD, List.from(edges), style, title, data, radius);
+  }
 
   @override
-  int get hashCode => id.hashCode;
+  bool operator ==(Object other) =>
+      identical(this, other) || other is ForceGraphNodeData && iD == other.iD;
+
+  @override
+  int get hashCode => iD.hashCode;
 
   @override
   String toString() {
-    return 'ForceGraphNodeData(id: $id, edges: $edges)';
+    return 'ForceGraphNodeData(id: $iD, edges: $edges)';
+  }
+
+  void removeEdge(int iD) {
+    edges.removeWhere((edge) => edge.iD == iD);
   }
 }
 
