@@ -10,6 +10,7 @@ class ForceGraphNodeData {
   final String title;
   final Object? data;
   final double radius;
+  final bool removable;
   const ForceGraphNodeData(
     this.iD,
     this.edges,
@@ -17,6 +18,7 @@ class ForceGraphNodeData {
     this.title,
     this.data,
     this.radius,
+    this.removable,
   );
 
   factory ForceGraphNodeData.from({
@@ -26,12 +28,21 @@ class ForceGraphNodeData {
     String title = '',
     Object? data,
     double radius = 0.3,
+    bool removable = true,
   }) {
-    return ForceGraphNodeData(id, edges, style, title, data, radius);
+    return ForceGraphNodeData(id, edges, style, title, data, radius, removable);
   }
 
   ForceGraphNodeData deepCopy() {
-    return ForceGraphNodeData(iD, List.from(edges), style, title, data, radius);
+    return ForceGraphNodeData(
+      iD,
+      List.from(edges),
+      style,
+      title,
+      data,
+      radius,
+      removable,
+    );
   }
 
   @override

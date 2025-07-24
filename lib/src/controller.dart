@@ -289,25 +289,34 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   Set<String> removeNode(String nodeID) {
+    final node = _nodes[nodeID];
+    if (node == null) {
+      throw 'Node $nodeID not found';
+    }
+
+    if (!node.data.removable) {
+      throw 'Node $nodeID is not removable';
+    }
     final removedNodeIDs = <String>{};
-    final node = _nodes.remove(nodeID);
-    if (node != null) {
-      removedNodeIDs.add(nodeID);
-      final body = node.body;
-      final connectedNodes = <ForceGraphNode>{};
-      final edges = <int, ForceGraphEdgeData>{};
-      for (final edge in node.body.joints) {
-        final otherBody = edge.otherBody(body);
-        final otherBodyID = (otherBody.userData as ForceGraphNodeData).iD;
-        connectedNodes.add(_nodes[otherBodyID]!);
-        final int edgeID = ForceGraphEdgeData.getID(nodeID, otherBodyID);
-        edges[edgeID] = _joints[edgeID]!.data;
-      }
+
+    _nodes.remove(nodeID);
+    final body = node!.body;
+    final connectedNodes = <ForceGraphNode>{};
+    final edges = <int, ForceGraphEdgeData>{};
+    for (final edge in node.body.joints) {
+      final otherBody = edge.otherBody(body);
+      final otherBodyID = (otherBody.userData as ForceGraphNodeData).iD;
+      connectedNodes.add(_nodes[otherBodyID]!);
+      final int edgeID = ForceGraphEdgeData.getID(nodeID, otherBodyID);
+      edges[edgeID] = _joints[edgeID]!.data;
+    }
+
+    try {
+      world.destroyBody(body);
       if (node.selected) {
         node.selected = false;
       }
-      world.destroyBody(body);
-
+      removedNodeIDs.add(nodeID);
       final connectableNodes = [
         for (final node in connectedNodes)
           if (node.body.joints.isNotEmpty) node,
@@ -346,15 +355,20 @@ class ForceGraphController extends ChangeNotifier {
 
             world.createJoint(joint);
           } else {
-            if (node.selected) {
-              node.selected = false;
+            if (node.data.removable) {
+              try {
+                world.destroyBody(node.body);
+                if (node.selected) {
+                  node.selected = false;
+                }
+                removedNodeIDs.add(node.iD);
+              } catch (_) {}
             }
-            world.destroyBody(node.body);
-            removedNodeIDs.add(node.iD);
           }
         }
       }
-    }
+    } catch (_) {}
+
     return removedNodeIDs;
   }
 
@@ -586,7 +600,9 @@ class ForceGraphController extends ChangeNotifier {
 
   void _clear() {
     for (final node in _nodes.values) {
-      world.destroyBody(node.body);
+      try {
+        world.destroyBody(node.body);
+      } catch (_) {}
     }
     _selectedNodeIds.clear();
     _joints.clear();
@@ -602,7 +618,6 @@ class ForceGraphController extends ChangeNotifier {
     super.dispose();
     disposeTicker();
     _clear();
-    world.clearForces();
   }
 
   Completer<void>? _completer;
@@ -619,20 +634,6 @@ class ForceGraphController extends ChangeNotifier {
     }
     return _completer!.future.whenComplete(() => null);
   }
-
-  // Future<void> addNodes(
-  //   List<ForceGraphNodeData> nodes, {
-  //   bool notifyReadyStatusChange = true,
-  // }) async {
-  //   final worldSize = viewportController.worldSize;
-
-  //   await _graphBuilder.loadMore(nodes, worldSize, (progress) {
-  //     _loadingProgressStep = progress;
-  //     notifyListeners();
-  //   });
-  //   _clear();
-  //   await _loadData(_graphBuilder.getNodes());
-  // }
 
   final ForceDirectedGraphBuilder _graphBuilder;
 
@@ -839,7 +840,10 @@ class ForceGraphController extends ChangeNotifier {
         node.hovered = false;
       }
       if (nodeID != null) {
-        final node = _nodes[nodeID]!;
+        final node = _nodes[nodeID];
+        if (node == null) {
+          return false;
+        }
         node.hovered = true;
         if (animateToCenter) {
           node._animateCenter();
