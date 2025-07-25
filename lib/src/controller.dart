@@ -39,6 +39,8 @@ class ForceGraphController extends ChangeNotifier {
   final double jointDamping;
   final double jointFrequency;
 
+  final bool removeNodeCascade;
+
   double _nodeLinearDamping = 2.5;
 
   double get nodeLinearDamping => _nodeLinearDamping;
@@ -60,6 +62,7 @@ class ForceGraphController extends ChangeNotifier {
     this.staticNodes = false,
     this.nodeDragDamping = 1,
     this.nodeMinimumSpacing = 0,
+    this.removeNodeCascade = true,
     List<ForceGraphNodeData> nodes = const [],
     this.enableNodesAutoMove = false, // experimental
     this.maxSelection = 1,
@@ -323,46 +326,50 @@ class ForceGraphController extends ChangeNotifier {
       ];
 
       for (final node in connectedNodes) {
-        final oldEdge = edges[ForceGraphEdgeData.getID(nodeID, node.iD)]!;
         if (node.body.joints.isEmpty) {
-          final closestNode = _getClosestNode(node, connectableNodes);
-          if (closestNode != null) {
-            final jointDef = DistanceJointDef()
-              ..initialize(
-                node.body,
-                closestNode.body,
-                node.body.position,
-                closestNode.position,
-              )
-              ..frequencyHz = jointFrequency
-              ..dampingRatio = jointDamping;
-            final oldClosestNodeEdge =
-                edges[ForceGraphEdgeData.getID(nodeID, closestNode.iD)]!;
-            final double similarity =
-                oldEdge.similarity * oldClosestNodeEdge.similarity;
-            final weight = min(oldEdge.weight, oldClosestNodeEdge.weight);
-            final style = oldEdge.style;
-            final joint = DistanceJoint(jointDef);
-            final data = ForceGraphEdgeData(
-              node.iD,
-              closestNode.iD,
-              similarity,
-              weight,
-              style,
-            );
-            final edge = ForceGraphEdge(joint, data, this);
-            _joints[data.iD] = edge;
-
-            world.createJoint(joint);
+          if (removeNodeCascade) {
+            removeNode(node.iD);
           } else {
-            if (node.data.removable) {
-              try {
-                world.destroyBody(node.body);
-                if (node.selected) {
-                  node.selected = false;
-                }
-                removedNodeIDs.add(node.iD);
-              } catch (_) {}
+            final oldEdge = edges[ForceGraphEdgeData.getID(nodeID, node.iD)]!;
+            final closestNode = _getClosestNode(node, connectableNodes);
+            if (closestNode != null) {
+              final jointDef = DistanceJointDef()
+                ..initialize(
+                  node.body,
+                  closestNode.body,
+                  node.body.position,
+                  closestNode.position,
+                )
+                ..frequencyHz = jointFrequency
+                ..dampingRatio = jointDamping;
+              final oldClosestNodeEdge =
+                  edges[ForceGraphEdgeData.getID(nodeID, closestNode.iD)]!;
+              final double similarity =
+                  oldEdge.similarity * oldClosestNodeEdge.similarity;
+              final weight = min(oldEdge.weight, oldClosestNodeEdge.weight);
+              final style = oldEdge.style;
+              final joint = DistanceJoint(jointDef);
+              final data = ForceGraphEdgeData(
+                node.iD,
+                closestNode.iD,
+                similarity,
+                weight,
+                style,
+              );
+              final edge = ForceGraphEdge(joint, data, this);
+              _joints[data.iD] = edge;
+
+              world.createJoint(joint);
+            } else {
+              if (node.data.removable) {
+                try {
+                  world.destroyBody(node.body);
+                  if (node.selected) {
+                    node.selected = false;
+                  }
+                  removedNodeIDs.add(node.iD);
+                } catch (_) {}
+              }
             }
           }
         }
@@ -863,12 +870,16 @@ class ForceGraphController extends ChangeNotifier {
   bool hoverEdge(int? edgeID, {bool programatical = true}) {
     if (edgeID != $_hoveredEdgeID) {
       if ($_hoveredEdgeID != null) {
-        final edge = _joints[$_hoveredEdgeID]!;
-        edge.hovered = false;
+        final edge = _joints[$_hoveredEdgeID];
+        if (edge != null) {
+          edge.hovered = false;
+        }
       }
       if (edgeID != null) {
-        final edge = _joints[edgeID]!;
-        edge.hovered = true;
+        final edge = _joints[edgeID];
+        if (edge != null) {
+          edge.hovered = true;
+        }
       }
       _programaticalHover = programatical;
       $_hoveredEdgeID = edgeID;
