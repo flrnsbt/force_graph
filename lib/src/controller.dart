@@ -680,6 +680,9 @@ class ForceGraphController extends ChangeNotifier {
     double minSpacing = double.infinity;
     for (final edge in _graphBuilder.edges) {
       try {
+        if (edge.source == edge.target) {
+          continue;
+        }
         final (nodeA, nodeB) = _getBodyPair(edge);
 
         final jointDef = DistanceJointDef()
