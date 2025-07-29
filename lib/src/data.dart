@@ -27,7 +27,7 @@ class ForceGraphNodeData {
     GraphComponentStyle style = GraphComponentStyle.none,
     String title = '',
     Object? data,
-    double radius = 0.3,
+    double radius = 0.2,
     bool removable = true,
   }) {
     return ForceGraphNodeData(id, edges, style, title, data, radius, removable);
@@ -117,7 +117,7 @@ class GraphComponentStyle {
     Color? selectedColor,
     Color? selectedColorBorder,
     Color? colorBorder,
-    double borderWidth = 0.075,
+    double borderWidth = 0.07,
     Color? hoverColor,
   }) {
     return GraphComponentStyle.fromGraphComponentStyleElement(
@@ -168,7 +168,7 @@ class GraphComponentStyleElement {
     this.selectedColorBorder,
     this.colorBorder,
     this.hoverColor,
-    this.borderWidth = 0.075,
+    this.borderWidth = 0.07,
   });
 
   @override

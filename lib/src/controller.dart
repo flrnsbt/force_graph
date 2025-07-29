@@ -1422,7 +1422,7 @@ class ForceGraphNode {
 
     final body = world.createBody(nodeDef);
 
-    body.createFixtureFromShape(CircleShape(radius: node.radius));
+    body.createFixtureFromShape(CircleShape(radius: node.radius * 2));
 
     // body.setMassData(MassData()..mass = .1 * node.edges.length);
     body.setMassData(_mass);
