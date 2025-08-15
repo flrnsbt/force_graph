@@ -303,7 +303,7 @@ class ForceGraphController extends ChangeNotifier {
     final removedNodeIDs = <String>{};
 
     _nodes.remove(nodeID);
-    final body = node!.body;
+    final body = node.body;
     final connectedNodes = <ForceGraphNode>{};
     final edges = <int, ForceGraphEdgeData>{};
     for (final edge in node.body.joints) {

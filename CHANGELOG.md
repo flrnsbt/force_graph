@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.3.9
 
-* TODO: Describe initial release.
+Remove unecessary null check in removeNode
