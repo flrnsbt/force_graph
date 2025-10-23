@@ -808,6 +808,8 @@ class ForceGraphController extends ChangeNotifier {
   bool get _controlKeyPressed => defaultTargetPlatform == TargetPlatform.macOS
       ? HardwareKeyboard.instance.isMetaPressed
       : HardwareKeyboard.instance.isControlPressed;
+
+  
   MouseJoint? _mouseJoint;
 
   Rect? get worldSelectionRect {
@@ -1014,8 +1016,9 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
     }
     _updateAutoMoveStatus();
   }
+  
 
-  void onKeyEvent(KeyEvent event) {
+  KeyEventResult onKeyEvent(FocusNode _, KeyEvent event) {
     final ctrlPressed = _controlKeyPressed;
     const factor = 10.0;
     switch (event.physicalKey) {
@@ -1025,21 +1028,22 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
         } else {
           viewportController.moveBy(Offset(0, factor));
         }
-        break;
+        return KeyEventResult.handled;
       case PhysicalKeyboardKey.arrowDown:
         if (ctrlPressed) {
           viewportController.zoomOut();
         } else {
           viewportController.moveBy(Offset(0, -factor));
         }
-        break;
+        return KeyEventResult.handled;
       case PhysicalKeyboardKey.arrowLeft:
         viewportController.moveBy(Offset(factor, 0));
-        break;
+        return KeyEventResult.handled;
       case PhysicalKeyboardKey.arrowRight:
         viewportController.moveBy(Offset(-factor, 0));
-        break;
+        return KeyEventResult.handled;
     }
+    return KeyEventResult.ignored;
   }
 
   void onTapUp(TapUpDetails details) {

@@ -108,9 +108,12 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   void initState() {
     super.initState();
     widget.controller.initWorld(this);
-
+    _focusNode.onKeyEvent = widget.controller.onKeyEvent;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.controller.addListener(_refreshUI);
+      if (_focusNode.hasFocus || !_focusNode.hasFocus) {
+        _ensureFocus();
+      }
     });
     if (widget.onSelectionChanged != null) {
       widget.controller.addOnSelectionChangedListener(
@@ -125,6 +128,12 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
 
     widget.controller.addOnSecondaryTapListener(_onSecondaryTap);
+  }
+
+  void _ensureFocus() {
+    if (mounted && !_focusNode.hasFocus) {
+      _focusNode.requestFocus();
+    }
   }
 
   Offset? _secondaryTapPosition;
@@ -194,39 +203,44 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       ),
     );
     final bool isLoading = widget.controller.isLoading;
+    final bool enableInput = isReady || isLoading || hasError;
 
-    if (isReady || isLoading || hasError) {
-      child = KeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: widget.controller.onKeyEvent,
-        child: MouseRegion(
-          cursor: getCursor(),
-          onExit: (event) {
-            widget.controller.updateHover(null);
-          },
-          onEnter: (event) {
-            widget.controller.updateHover(event.localPosition);
-          },
-          onHover: (event) {
-            widget.controller.updateHover(event.localPosition);
-          },
-          child: Listener(
-            onPointerSignal: widget.controller.onPointerSignal,
-            child: GestureDetector(
-              supportedDevices: {...PointerDeviceKind.values},
-              onTapUp: widget.controller.onTapUp,
-              onSecondaryTapUp: widget.controller.onSecondaryTapUp,
-              onScaleStart: widget.controller.onScaleStart,
-              onScaleUpdate: widget.controller.onScaleUpdate,
-              onScaleEnd: widget.controller.onScaleEnd,
+    child = Focus(
+      focusNode: _focusNode,
+      autofocus: true,
 
-              child: child,
-            ),
+      child: MouseRegion(
+        cursor: getCursor(),
+        onExit: (event) {
+          if (enableInput) widget.controller.updateHover(null);
+        },
+        onEnter: (event) {
+          if (enableInput) widget.controller.updateHover(event.localPosition);
+        },
+        onHover: (event) {
+          if (enableInput) widget.controller.updateHover(event.localPosition);
+        },
+        child: Listener(
+          onPointerSignal: enableInput
+              ? widget.controller.onPointerSignal
+              : null,
+          child: GestureDetector(
+            supportedDevices: {...PointerDeviceKind.values},
+            onTapDown: (details) {
+              _ensureFocus();
+            },
+            onTapUp: enableInput ? widget.controller.onTapUp : null,
+            onSecondaryTapUp: enableInput
+                ? widget.controller.onSecondaryTapUp
+                : null,
+            onScaleStart: enableInput ? widget.controller.onScaleStart : null,
+            onScaleUpdate: enableInput ? widget.controller.onScaleUpdate : null,
+            onScaleEnd: enableInput ? widget.controller.onScaleEnd : null,
+            child: child,
           ),
         ),
-      );
-    }
+      ),
+    );
 
     return ClipRect(
       child: Stack(
@@ -307,6 +321,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     }
     if (widget.focusNode == null) {
       _focusNode.dispose();
+    } else {
+      _focusNode.onKeyEvent = null;
     }
     widget.controller.disposeTicker();
     widget.controller.removeListener(_refreshUI);
