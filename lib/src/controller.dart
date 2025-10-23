@@ -1552,7 +1552,7 @@ class ForceGraphNode {
       radius *= 1.25;
     }
     final bool selected = this.selected;
-    bool hasBorder = selected || style.colorBorder != null;
+    final bool hasBorder = style.borderWidth > 0;
     if (selected) {
       if (style.selectedColor != null) {
         paint.color = style.selectedColor!;
@@ -1569,6 +1569,9 @@ class ForceGraphNode {
       newPaint.color =
           (selected ? style.selectedColorBorder : style.colorBorder) ??
           Colors.redAccent;
+      if (_opacity != 1) {
+        newPaint.color = newPaint.color.withValues(alpha: _opacity);
+      }
 
       canvas.drawCircle(pos, radius, newPaint);
     }
