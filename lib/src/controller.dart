@@ -563,6 +563,35 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  void _recalculateHighlights() {
+    if (_selectedNodeIds.isNotEmpty) {
+      // set all to hidden
+      for (final node in _nodes.values) {
+        node._opacity = nodeHiddenOpacity ?? 0.8;
+      }
+      // set selected and linked to 1
+      Set<String> toHighlight = Set.from(_selectedNodeIds);
+      for (final selectedId in _selectedNodeIds) {
+        for (final joint in _joints.values) {
+          final edge = joint.data;
+          if (edge.source == selectedId) {
+            toHighlight.add(edge.target);
+          } else if (edge.target == selectedId) {
+            toHighlight.add(edge.source);
+          }
+        }
+      }
+      for (final highlightId in toHighlight) {
+        _nodes[highlightId]!._opacity = 1;
+      }
+    } else {
+      // no selection, all to 1
+      for (final node in _nodes.values) {
+        node._opacity = 1;
+      }
+    }
+  }
+
   void addOnHoverListener(void Function(ForceGraphNode?) onHover) {
     __onHovereds.add(onHover);
   }
@@ -1497,39 +1526,17 @@ class ForceGraphNode {
   set selected(bool value) {
     if (selected != value) {
       if (value) {
-        if (_controller._selectedNodeIds.isEmpty) {
-          for (final node in _controller._nodes.values) {
-            node._opacity = _controller.nodeHiddenOpacity ?? 0.8;
-          }
+        _controller._selectedNodeIds.add(iD);
+        final selectionCount = _controller._selectedNodeIds.length;
+        if (_controller.maxSelection != null &&
+            selectionCount > _controller.maxSelection!) {
+          _controller._selectedNodeIds.remove(iD);
+          return;
         }
-        if (_controller._selectedNodeIds.add(iD)) {
-          final selectionCount = _controller._selectedNodeIds.length;
-          if (_controller.maxSelection != null &&
-              selectionCount >= _controller.maxSelection!) {
-            _controller._selectedNodeIds.remove(
-              _controller._selectedNodeIds.first,
-            );
-          }
-        }
-
-        for (final edge in data.edges) {
-          if (edge.target == iD) {
-            _controller._nodes[edge.source]!._opacity = 1;
-          } else if (edge.source == iD) {
-            _controller._nodes[edge.target]!._opacity = 1;
-          }
-        }
-        _opacity = 1;
       } else {
         _controller._selectedNodeIds.remove(iD);
-        if (_controller._selectedNodeIds.isNotEmpty) {
-          _opacity = _controller.nodeHiddenOpacity ?? 0.8;
-        } else {
-          for (final node in _controller._nodes.values) {
-            node._opacity = 1;
-          }
-        }
       }
+      _controller._recalculateHighlights();
       _controller._onSelectionChanged();
     }
   }
