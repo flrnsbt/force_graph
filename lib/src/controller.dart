@@ -291,6 +291,14 @@ class ForceGraphController extends ChangeNotifier {
     node._animateCenter();
   }
 
+  ForceGraphNode getNode(String nodeID) {
+    final node = _nodes[nodeID];
+    if (node == null) {
+      throw 'Node $nodeID not found';
+    }
+    return node;
+  }
+
   Set<String> removeNode(String nodeID) {
     final node = _nodes[nodeID];
     if (node == null) {
