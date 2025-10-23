@@ -924,6 +924,18 @@ class ForceGraphController extends ChangeNotifier {
     }
     return biggestRadius;
   }
+
+  void pause() {
+    if (_ticker?.isTicking == true) {
+      _ticker?.muted = true;
+    }
+  }
+
+  void resume() {
+    if (_ticker?.muted == true) {
+      _ticker?.muted = false;
+    }
+  }
 }
 
 extension on Joint {
