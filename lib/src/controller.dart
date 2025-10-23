@@ -1629,6 +1629,8 @@ class ForceGraphNode {
 
   double _opacity = 1;
 
+  bool get opaque => _opacity >= 1;
+
   bool moving([double tolerance = 0.1]) {
     final velocity = body.linearVelocity;
     final vX = velocity.x.abs();
