@@ -406,7 +406,7 @@ class ForceGraphController extends ChangeNotifier {
 
   Future<void> _init({bool notifyReadyStatusChange = true}) async {
     try {
-      _clear();
+      clear();
       _error = null;
       _ticker?.stop();
       _loadingProgressStep = 0;
@@ -642,7 +642,13 @@ class ForceGraphController extends ChangeNotifier {
     __onTaps.remove(onTap);
   }
 
-  void _clear() {
+  /// Clears all the data in the graph controller. This is useful for when
+  /// the data is changed and the graph needs to be rebuilt.
+  ///
+  /// This will remove all the bodies from the world, clear the node and joint
+  /// maps, and reset the selected node ids and the on hover and on selection
+  /// changed listeners.
+  void clear() {
     for (final node in _nodes.values) {
       try {
         world.destroyBody(node.body);
@@ -661,7 +667,7 @@ class ForceGraphController extends ChangeNotifier {
     _graphBuilder.stop();
     super.dispose();
     disposeTicker();
-    _clear();
+    clear();
   }
 
   Completer<void>? _completer;
@@ -809,7 +815,6 @@ class ForceGraphController extends ChangeNotifier {
       ? HardwareKeyboard.instance.isMetaPressed
       : HardwareKeyboard.instance.isControlPressed;
 
-  
   MouseJoint? _mouseJoint;
 
   Rect? get worldSelectionRect {
@@ -1016,7 +1021,6 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
     }
     _updateAutoMoveStatus();
   }
-  
 
   KeyEventResult onKeyEvent(FocusNode _, KeyEvent event) {
     final ctrlPressed = _controlKeyPressed;
