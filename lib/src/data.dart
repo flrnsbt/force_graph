@@ -45,6 +45,24 @@ class ForceGraphNodeData {
     );
   }
 
+  ForceGraphNodeData copyWith({
+    String? iD,
+    List<ForceGraphEdgeData>? edges,
+    GraphComponentStyle? style,
+    String? title,
+    Object? data,
+    double? radius,
+    bool? removable,
+  }) => ForceGraphNodeData(
+    iD ?? this.iD,
+    edges ?? this.edges,
+    style ?? this.style,
+    title ?? this.title,
+    data ?? this.data,
+    radius ?? this.radius,
+    removable ?? this.removable,
+  );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || other is ForceGraphNodeData && iD == other.iD;
@@ -54,7 +72,7 @@ class ForceGraphNodeData {
 
   @override
   String toString() {
-    return 'ForceGraphNodeData(id: $iD, edges: $edges)';
+    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable)';
   }
 
   void removeEdge(int iD) {
@@ -67,23 +85,26 @@ class ForceGraphEdgeData {
   final String target;
   final double similarity;
   final double weight;
+  final Object? data;
   final GraphComponentStyle style;
   const ForceGraphEdgeData(
     this.source,
     this.target,
     this.similarity,
     this.weight,
-    this.style,
-  );
+    this.style, [
+    this.data,
+  ]);
 
   factory ForceGraphEdgeData.from({
     required String source,
     required String target,
     required double similarity,
+    Object? data,
     double weight = 1.0,
     GraphComponentStyle style = GraphComponentStyle.none,
   }) {
-    return ForceGraphEdgeData(source, target, similarity, weight, style);
+    return ForceGraphEdgeData(source, target, similarity, weight, style, data);
   }
 
   static int getID(String source, String target) =>
@@ -100,7 +121,7 @@ class ForceGraphEdgeData {
 
   @override
   String toString() {
-    return 'ForceGraphEdgeData(source: $source, target: $target, similarity: $similarity)';
+    return 'ForceGraphEdgeData(source: $source, target: $target, similarity: $similarity, weight: $weight, style: $style, data: $data)';
   }
 }
 

@@ -49,10 +49,6 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
     );
   }
 
-  //TODO: implement
-  @override
-  bool ensureReady(double dt, ForceGraphController controller) => true;
-
   @override
   Future<void> $_performLayout(
     Iterable<ForceGraphNodeDataMap> nodes,
@@ -218,6 +214,87 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
   int? get totalStep => iterations + correctionIterations;
 }
 
+class HierarchicalGraphBuilder extends ForceDirectedGraphBuilder {
+  /// Horizontal spacing between nodes in the same level
+  final double horizontalSpacing;
+
+  /// Vertical spacing between hierarchy levels
+  final double verticalSpacing;
+
+  /// Maximum number of nodes per level
+  final int? maxNodesPerLevel;
+
+  HierarchicalGraphBuilder({
+    this.horizontalSpacing = 100,
+    this.verticalSpacing = 100,
+    this.maxNodesPerLevel,
+    super.debugLogs,
+    super.minDistance,
+    super.maxDistance,
+  });
+
+  @override
+  Future<void> $_performLayout(
+    Iterable<ForceGraphNodeDataMap> nodes,
+    Size size, [
+    ValueChanged<int>? progressCallback,
+    Map<String, Point<double>>? positionsToPreserve,
+  ]) async {
+    // Convert list to ForceGraphNodeData-like map (id + edges)
+    final nodeList = nodes.toList();
+
+    // Compute degree of each node
+    final degreeMap = <String, int>{};
+    for (final node in nodeList) {
+      final edges = node['edges'] as List;
+      degreeMap[node['id']] = edges.length;
+    }
+
+    // Sort nodes by degree descending (most connected first)
+    nodeList.sort(
+      (a, b) => (degreeMap[b['id']] ?? 0).compareTo(degreeMap[a['id']] ?? 0),
+    );
+
+    // Determine number of levels
+    int totalNodes = nodeList.length;
+    int levelCount = max(1, sqrt(totalNodes).round());
+
+    // Assign nodes to levels (top-heavy)
+    final levels = <int, List<Map>>{};
+    for (int i = 0; i < totalNodes; i++) {
+      int level = (i / (totalNodes / levelCount)).floor();
+      levels.putIfAbsent(level, () => []).add(nodeList[i]);
+    }
+
+    // Layout parameters
+    double startY = size.height / 2 - (levels.length - 1) * verticalSpacing / 2;
+
+    _positions.clear();
+    int processed = 0;
+
+    // Assign positions
+    for (int l = 0; l < levels.length; l++) {
+      final nodesAtLevel = levels[l]!;
+      final levelY = startY + l * verticalSpacing;
+      final levelWidth = (nodesAtLevel.length - 1) * horizontalSpacing;
+      final startX = size.width / 2 - levelWidth / 2;
+
+      for (int i = 0; i < nodesAtLevel.length; i++) {
+        final node = nodesAtLevel[i];
+        final x = startX + i * horizontalSpacing;
+        final y = levelY;
+
+        _positions[node['id']] = Point(x, y);
+        processed++;
+        progressCallback?.call(((processed / totalNodes) * 100).round());
+      }
+    }
+
+    // Final progress signal
+    progressCallback?.call(100);
+  }
+}
+
 Map<String, Map<String, double>> _jsonifyPoints(
   Map<String, Point<double>> points,
 ) {
@@ -244,6 +321,10 @@ abstract class ForceDirectedGraphBuilder {
   final Map<String, Point<double>> _positions = {};
   final List<ForceGraphEdgeData> edges = [];
   final List<ForceGraphNodeData> _nodes = [];
+
+  //TODO: implement
+  bool ensureReady(double dt, ForceGraphController controller) => true;
+
 
   double? _minDistance;
   double? _maxDistance;
@@ -294,14 +375,12 @@ abstract class ForceDirectedGraphBuilder {
 
   bool get hasMinDistance => _minDistance != null;
 
-  IsolateManager createIsolate();
+  IsolateManager createIsolate() => throw UnimplementedError();
 
   FutureOr<void> stop() async {
     await _isolate?.stop();
     _isolate = null;
   }
-
-  bool ensureReady(double dt, ForceGraphController controller) => true;
 
   Future<void> $_performLayout(
     Iterable<ForceGraphNodeDataMap> nodes,

@@ -682,7 +682,7 @@ class ForceGraphController extends ChangeNotifier {
     if (viewportController.hasSize) {
       _init(notifyReadyStatusChange: notifyReadyStatusChange);
     }
-    return _completer!.future.whenComplete(() => null);
+    return _completer!.future.whenComplete(() => _completer = null);
   }
 
   final ForceDirectedGraphBuilder _graphBuilder;
