@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
@@ -105,6 +106,21 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   late final _focusNode = widget.focusNode ?? FocusNode();
 
   bool _overTooltip = false;
+  Timer? _exitHoverTimer;
+
+  void _handleMainAreaExit() {
+    _exitHoverTimer?.cancel();
+    _exitHoverTimer = Timer(const Duration(milliseconds: 50), () {
+      if (mounted && !_overTooltip) {
+        widget.controller.updateHover(null);
+      }
+    });
+  }
+
+  void _cancelExitTimer() {
+    _exitHoverTimer?.cancel();
+    _exitHoverTimer = null;
+  }
 
   @override
   void initState() {
@@ -214,10 +230,13 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       child: MouseRegion(
         cursor: getCursor(),
         onExit: (event) {
-          if (enableInput && !_overTooltip) widget.controller.updateHover(null);
+          if (enableInput) _handleMainAreaExit();
         },
         onEnter: (event) {
-          if (enableInput) widget.controller.updateHover(event.localPosition);
+          if (enableInput) {
+            _cancelExitTimer();
+            widget.controller.updateHover(event.localPosition);
+          }
         },
         onHover: (event) {
           if (enableInput) widget.controller.updateHover(event.localPosition);
@@ -311,6 +330,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
   @override
   void dispose() {
+    _exitHoverTimer?.cancel();
     if (widget.onSecondaryTappedNode != null) {
       widget.controller.removeNodeOnSecondaryTapListener(
         widget.onSecondaryTappedNode!,
@@ -379,13 +399,18 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         target: offset,
         offset: Offset(0, widget.edgeTooltipSpacing),
         child: MouseRegion(
-          onEnter: (_) => _overTooltip = true,
-          onExit: (_) => _overTooltip = false,
+          onEnter: (_) {
+            _cancelExitTimer();
+            _overTooltip = true;
+          },
+          onExit: (_) {
+            _overTooltip = false;
+            _handleMainAreaExit();
+          },
           child: Material(
             type: MaterialType.transparency,
             child: widget.edgeTooltipBuilder!(context, edge),
           ),
-          
         ),
       );
     }
@@ -399,12 +424,17 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         target: position,
         offset: Offset(0, widget.nodeTooltipSpacing),
         child: MouseRegion(
-          onEnter: (_) => _overTooltip = true,
-          onExit: (_) => _overTooltip = false,
+          onEnter: (_) {
+            _cancelExitTimer();
+            _overTooltip = true;
+          },
+          onExit: (_) {
+            _overTooltip = false;
+            _handleMainAreaExit();
+          },
           child: Material(
             type: MaterialType.transparency,
             child: widget.nodeTooltipBuilder!(context, node),
-            
           ),
         ),
       );
