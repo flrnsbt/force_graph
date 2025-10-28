@@ -1088,11 +1088,17 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
         worldPos = viewportController.screenToWorld(position);
       }
 
-      if (hoverNode(findBodyAt(worldPos)?.iD, programatical: false) ||
-          hoverEdge(findJointAt(worldPos)?.data.iD, programatical: false)) {
-        _updateAutoMoveStatus();
-        _hoverPosition = position;
+      final node = findBodyAt(worldPos);
+      hoverNode(node?.iD, programatical: false);
+
+      if (node == null) {
+        final joint = findJointAt(worldPos)?.data.iD;
+        hoverEdge(joint, programatical: false);
+      } else {
+        hoverEdge(null, programatical: false);
       }
+      _updateAutoMoveStatus();
+      _hoverPosition = position;
       _hoverDebounceTimer = null;
     });
   }
