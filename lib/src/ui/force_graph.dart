@@ -104,6 +104,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
   late final _focusNode = widget.focusNode ?? FocusNode();
 
+  bool _overTooltip = false;
+
   @override
   void initState() {
     super.initState();
@@ -212,7 +214,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       child: MouseRegion(
         cursor: getCursor(),
         onExit: (event) {
-          if (enableInput) widget.controller.updateHover(null);
+          if (enableInput && !_overTooltip) widget.controller.updateHover(null);
         },
         onEnter: (event) {
           if (enableInput) widget.controller.updateHover(event.localPosition);
@@ -376,9 +378,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       return TooltipPositionedWidget(
         target: offset,
         offset: Offset(0, widget.edgeTooltipSpacing),
-        child: Material(
-          type: MaterialType.transparency,
-          child: widget.edgeTooltipBuilder!(context, edge),
+        child: MouseRegion(
+          onEnter: (_) => _overTooltip = true,
+          onExit: (_) => _overTooltip = false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: widget.edgeTooltipBuilder!(context, edge),
+          ),
+          
         ),
       );
     }
@@ -391,9 +398,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       return TooltipPositionedWidget(
         target: position,
         offset: Offset(0, widget.nodeTooltipSpacing),
-        child: Material(
-          type: MaterialType.transparency,
-          child: widget.nodeTooltipBuilder!(context, node),
+        child: MouseRegion(
+          onEnter: (_) => _overTooltip = true,
+          onExit: (_) => _overTooltip = false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: widget.nodeTooltipBuilder!(context, node),
+            
+          ),
         ),
       );
     }

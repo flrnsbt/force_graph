@@ -649,6 +649,7 @@ class ForceGraphController extends ChangeNotifier {
   /// maps, and reset the selected node ids and the on hover and on selection
   /// changed listeners.
   void clear() {
+    _hoverDebounceTimer?.cancel();
     for (final node in _nodes.values) {
       try {
         world.destroyBody(node.body);
@@ -664,6 +665,7 @@ class ForceGraphController extends ChangeNotifier {
   @override
   void dispose() {
     _scheduleAutoMove?.cancel();
+    _hoverDebounceTimer?.cancel();
     _graphBuilder.stop();
     super.dispose();
     disposeTicker();
@@ -880,6 +882,8 @@ class ForceGraphController extends ChangeNotifier {
 
   bool _programaticalHover = false;
 
+  Timer? _hoverDebounceTimer;
+
   bool get canAutoMove =>
       isHovering && !isDraggingNode && !isPanning && !isSelecting;
 
@@ -1074,17 +1078,21 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
 
   void updateHover(Offset? position) {
     _scheduleAutoMove?.cancel();
+    _hoverDebounceTimer?.cancel();
 
-    Vector2? worldPos;
-    if (position != null) {
-      worldPos = viewportController.screenToWorld(position);
-    }
+    _hoverDebounceTimer = Timer(const Duration(milliseconds: 10), () {
+      Vector2? worldPos;
+      if (position != null) {
+        worldPos = viewportController.screenToWorld(position);
+      }
 
-    if (hoverNode(findBodyAt(worldPos)?.iD, programatical: false) ||
-        hoverEdge(findJointAt(worldPos)?.data.iD, programatical: false)) {
-      _updateAutoMoveStatus();
-      _hoverPosition = position;
-    }
+      if (hoverNode(findBodyAt(worldPos)?.iD, programatical: false) ||
+          hoverEdge(findJointAt(worldPos)?.data.iD, programatical: false)) {
+        _updateAutoMoveStatus();
+        _hoverPosition = position;
+      }
+      _hoverDebounceTimer = null;
+    });
   }
 
   void onScaleUpdate(ScaleUpdateDetails details) {
