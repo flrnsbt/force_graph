@@ -271,6 +271,8 @@ class HierarchicalGraphBuilder extends ForceDirectedGraphBuilder {
 
     _positions.clear();
     int processed = 0;
+final double verticalVariation =
+        verticalSpacing * 0.05; // how strong the zigzag is
 
     // Assign positions
     for (int l = 0; l < levels.length; l++) {
@@ -282,7 +284,9 @@ class HierarchicalGraphBuilder extends ForceDirectedGraphBuilder {
       for (int i = 0; i < nodesAtLevel.length; i++) {
         final node = nodesAtLevel[i];
         final x = startX + i * horizontalSpacing;
-        final y = levelY;
+        // Alternate above and below the baseline
+        final isEven = i.isEven;
+        final y = levelY + (isEven ? -verticalVariation : verticalVariation);
 
         _positions[node['id']] = Point(x, y);
         processed++;
