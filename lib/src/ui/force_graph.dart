@@ -180,7 +180,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     if (widget.controller.isDraggingNode) {
       return SystemMouseCursors.grabbing;
     }
-    if (widget.controller.isPhysicallyHovering) {
+    if (widget.controller.isPhysicallyHoveringNode) {
       return SystemMouseCursors.grab;
     }
     return SystemMouseCursors.basic;

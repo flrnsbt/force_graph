@@ -480,11 +480,11 @@ class ForceGraphController extends ChangeNotifier {
 
       final delta = anchorB - anchorA;
 
-      final start = anchorA + delta * 0.1;
-      final end = anchorA + delta * 0.9;
+      final start = anchorA;
+      final end = anchorB;
 
       final perp = Vector2(-delta.y, delta.x)..normalize();
-      final thickness = 0.1;
+      final thickness = 0.75 / viewportController.zoom;
       perp.scale(thickness);
 
       if (_pointNearLine(mouseWorldPosition, start, end, thickness)) {
@@ -877,8 +877,10 @@ class ForceGraphController extends ChangeNotifier {
   ForceGraphNode? get hoveredNode => _nodes[$_hoveredNodeID];
 
   bool get isHovering => $_hoveredNodeID != null || $_hoveredEdgeID != null;
+  bool get isHoveringNode => $_hoveredNodeID != null;
+  bool get isHoveringEdge => $_hoveredEdgeID != null;
 
-  bool get isPhysicallyHovering => isHovering && !_programaticalHover;
+  bool get isPhysicallyHoveringNode => isHoveringNode && !_programaticalHover;
 
   bool _programaticalHover = false;
 
