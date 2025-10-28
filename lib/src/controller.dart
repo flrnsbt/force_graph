@@ -1560,8 +1560,11 @@ class ForceGraphNode {
       radius *= 1.25;
     }
     final bool selected = this.selected;
-    final bool hasBorder = style.borderWidth > 0;
+    double borderWidth = style.borderWidth ?? 0;
     if (selected) {
+      if (style.selectedBorderWidth != null) {
+        borderWidth = style.selectedBorderWidth!;
+      }
       if (style.selectedColor != null) {
         paint.color = style.selectedColor!;
       }
@@ -1570,9 +1573,9 @@ class ForceGraphNode {
         paint.color = style.hoverColor!;
       }
     }
-    if (hasBorder) {
+    if (borderWidth > 0) {
       final newPaint = Paint.from(paint);
-      newPaint.strokeWidth = style.borderWidth;
+      newPaint.strokeWidth = borderWidth;
       newPaint.style = PaintingStyle.stroke;
       newPaint.color =
           (selected ? style.selectedColorBorder : style.colorBorder) ??

@@ -138,7 +138,9 @@ class GraphComponentStyle {
     Color? selectedColor,
     Color? selectedColorBorder,
     Color? colorBorder,
-    double borderWidth = 0.07,
+    double selectedBorderWidth = 0.07,
+    double? borderWidth,
+
     Color? hoverColor,
   }) {
     return GraphComponentStyle.fromGraphComponentStyleElement(
@@ -147,6 +149,7 @@ class GraphComponentStyle {
         selectedColor: selectedColor,
         selectedColorBorder: selectedColorBorder,
         colorBorder: colorBorder,
+        selectedBorderWidth: selectedBorderWidth,
         borderWidth: borderWidth,
         hoverColor: hoverColor,
       ),
@@ -165,6 +168,20 @@ class GraphComponentStyle {
     return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
 
+  GraphComponentStyle copyWith({
+    GraphComponentStyleElement? light,
+    GraphComponentStyleElement? dark,
+  }) {
+    return GraphComponentStyle(
+      light: light ?? this.light,
+      dark: dark ?? this.dark,
+    );
+  }
+
+  GraphComponentStyle merge(GraphComponentStyleElement element) {
+    return copyWith(light: light.merge(element), dark: dark.merge(element));
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -181,7 +198,8 @@ class GraphComponentStyleElement {
   final Color? selectedColor;
   final Color? selectedColorBorder;
   final Color? colorBorder;
-  final double borderWidth;
+  final double? selectedBorderWidth;
+  final double? borderWidth;
   final Color? hoverColor;
   const GraphComponentStyleElement({
     this.color,
@@ -189,8 +207,41 @@ class GraphComponentStyleElement {
     this.selectedColorBorder,
     this.colorBorder,
     this.hoverColor,
-    this.borderWidth = 0.07,
+    this.selectedBorderWidth,
+    this.borderWidth
   });
+
+  GraphComponentStyleElement merge(GraphComponentStyleElement element) {
+    return copyWith(
+      color: element.color,
+      selectedColor: element.selectedColor,
+      selectedColorBorder: element.selectedColorBorder,
+      colorBorder: element.colorBorder,
+      selectedBorderWidth: element.selectedBorderWidth,
+      hoverColor: element.hoverColor,
+      borderWidth: element.borderWidth,
+    );
+  }
+
+  GraphComponentStyleElement copyWith({
+    Color? color,
+    Color? selectedColor,
+    Color? selectedColorBorder,
+    Color? colorBorder,
+    double? selectedBorderWidth,
+    double? borderWidth,
+    Color? hoverColor,
+  }) {
+    return GraphComponentStyleElement(
+      color: color ?? this.color,
+      selectedColor: selectedColor ?? this.selectedColor,
+      selectedColorBorder: selectedColorBorder ?? this.selectedColorBorder,
+      colorBorder: colorBorder ?? this.colorBorder,
+      borderWidth: borderWidth ?? this.borderWidth,
+      selectedBorderWidth: selectedBorderWidth ?? this.selectedBorderWidth,
+      hoverColor: hoverColor ?? this.hoverColor,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -200,7 +251,7 @@ class GraphComponentStyleElement {
           selectedColor == other.selectedColor &&
           selectedColorBorder == other.selectedColorBorder &&
           colorBorder == other.colorBorder &&
-          borderWidth == other.borderWidth &&
+          selectedBorderWidth == other.selectedBorderWidth &&
           hoverColor == other.hoverColor;
 
   @override
@@ -209,6 +260,7 @@ class GraphComponentStyleElement {
       selectedColor.hashCode ^
       selectedColorBorder.hashCode ^
       colorBorder.hashCode ^
+      selectedBorderWidth.hashCode ^
       borderWidth.hashCode ^
       hoverColor.hashCode;
 }
