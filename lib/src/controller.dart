@@ -235,10 +235,13 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   Future<void> zoomOnNode(
-    String nodeID, [
+    String nodeID, {
     double? zoom,
     bool force = false,
-  ]) async {
+    Curve curve = Curves.linear,
+
+    Duration? animationDuration,
+  }) async {
     zoom ??= (viewportController.maxZoom + viewportController.minZoom) / 2;
     final node = _nodes[nodeID]!;
     final pos =
@@ -248,7 +251,12 @@ class ForceGraphController extends ChangeNotifier {
     final shift = viewportController.screenCenter - pos;
     viewportController.setPan(shift);
     if (zoom > viewportController.zoom || force) {
-      await viewportController.applyZoom(zoom, force: force);
+      await viewportController.applyZoom(
+        zoom,
+        force: force,
+        curve: curve,
+        animationDuration: animationDuration,
+      );
     }
   }
 

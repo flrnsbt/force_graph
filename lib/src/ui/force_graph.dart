@@ -95,7 +95,7 @@ class ForceGraphWidget extends StatefulWidget {
 }
 
 class _GraphPhysicsViewState extends State<ForceGraphWidget>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   World get world => widget.controller.world;
 
   ViewportController get viewportController =>
@@ -330,6 +330,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
   @override
   void dispose() {
+    widget.controller.disposeTicker();
+    widget.controller.removeListener(_refreshUI);
+
     _exitHoverTimer?.cancel();
     if (widget.onSecondaryTappedNode != null) {
       widget.controller.removeNodeOnSecondaryTapListener(
@@ -346,8 +349,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     } else {
       _focusNode.onKeyEvent = null;
     }
-    widget.controller.disposeTicker();
-    widget.controller.removeListener(_refreshUI);
 
     super.dispose();
   }
