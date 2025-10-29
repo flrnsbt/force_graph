@@ -20,6 +20,9 @@ class ForceGraphController extends ChangeNotifier {
   final List<ForceGraphNodeData> _rawData = [];
 
   final bool enableNodesAutoMove;
+  final bool animateBorders;
+  final bool animateBorderOnlyIfSelected;
+  final Duration animateBordersDuration;
 
   final bool enableAutoCenterOnNodeSelection;
 
@@ -57,6 +60,9 @@ class ForceGraphController extends ChangeNotifier {
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
     this.enableSelection = true,
+    this.animateBorders = false,
+    this.animateBorderOnlyIfSelected = false,
+    this.animateBordersDuration = const Duration(milliseconds: 5000),
     double nodeLinearDamping = 2.5,
     this.nodeDragMaxForce,
     this.staticNodes = false,
@@ -187,14 +193,14 @@ class ForceGraphController extends ChangeNotifier {
   void _stepWorld(Duration elapsed) {
     if (!viewportController.hasSize) return;
 
-    final eMs = elapsed.inMicroseconds;
-    final dt = (eMs - _elapsedMs) / Duration.microsecondsPerSecond;
-    _elapsedMs = eMs;
+    final newElapsed = elapsed.inMicroseconds;
+    final dt = (newElapsed - _elapsedMs) / Duration.microsecondsPerSecond;
+    _elapsedMs = newElapsed;
 
     world.stepDt(dt);
     viewportController.update(dt);
     for (final node in _nodes.values) {
-      node.update(dt, eMs);
+      node.update(dt, newElapsed);
     }
 
     if (!_isReady) {
@@ -1443,7 +1449,7 @@ class ForceGraphEdge {
 
     if (hide) {
       paint.color = paint.color.withValues(
-        alpha: _controller.edgeHiddenOpacity ?? 0.05,
+        alpha: paint.color.a * (_controller.edgeHiddenOpacity ?? 0.05),
       );
     } else {
       if (highlight) {
@@ -1577,9 +1583,13 @@ class ForceGraphNode {
     }
     final bool selected = this.selected;
     double borderWidth = style.borderWidth ?? 0;
+    Color? borderColor = style.colorBorder;
     if (selected) {
       if (style.selectedBorderWidth != null) {
         borderWidth = style.selectedBorderWidth!;
+      }
+      if (style.selectedColorBorder != null) {
+        borderColor = style.selectedColorBorder;
       }
       if (style.selectedColor != null) {
         paint.color = style.selectedColor!;
@@ -1590,20 +1600,46 @@ class ForceGraphNode {
       }
     }
     if (borderWidth > 0) {
+      if (style.borderWidthRatio) {
+        borderWidth *= radius;
+      } else {
+        borderWidth /= 2;
+      }
+      final animateBorder = data.animateBorder ?? _controller.animateBorders;
+      final animateBorderOnlyIfSelected =
+          data.animateBorderOnlyIfSelected ??
+          _controller.animateBorderOnlyIfSelected;
       final newPaint = Paint.from(paint);
-      newPaint.strokeWidth = borderWidth;
       newPaint.style = PaintingStyle.stroke;
-      newPaint.color =
-          (selected ? style.selectedColorBorder : style.colorBorder) ??
-          Colors.redAccent;
+      newPaint.color = borderColor ?? Colors.transparent;
+
+      double strokeRadius = radius + borderWidth;
+
+      if (animateBorder && (!animateBorderOnlyIfSelected || selected)) {
+        final duration =
+            (data.animateBorderDuration ?? _controller.animateBordersDuration)
+                .inMicroseconds;
+        double r = 2 * (_controller._elapsedMs % duration) / duration;
+
+        if (r > 1) {
+          r = 2 - r;
+        }
+
+        strokeRadius = radius + borderWidth * r;
+      }
+      newPaint.strokeWidth = (strokeRadius - radius) * 2;
+
+
       if (_opacity != 1) {
-        newPaint.color = newPaint.color.withValues(alpha: _opacity);
+        newPaint.color = newPaint.color.withValues(
+          alpha: newPaint.color.a * _opacity,
+        );
       }
 
-      canvas.drawCircle(pos, radius, newPaint);
+      canvas.drawCircle(pos, strokeRadius, newPaint);
     }
     if (_opacity != 1) {
-      paint.color = paint.color.withValues(alpha: _opacity);
+      paint.color = paint.color.withValues(alpha: paint.color.a * _opacity);
     }
 
     canvas.drawCircle(pos, radius, paint);

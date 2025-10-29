@@ -11,6 +11,9 @@ class ForceGraphNodeData {
   final Object? data;
   final double radius;
   final bool removable;
+  final bool? animateBorder;
+  final bool? animateBorderOnlyIfSelected;
+  final Duration? animateBorderDuration;
   const ForceGraphNodeData(
     this.iD,
     this.edges,
@@ -19,6 +22,9 @@ class ForceGraphNodeData {
     this.data,
     this.radius,
     this.removable,
+    this.animateBorder,
+    this.animateBorderOnlyIfSelected,
+    this.animateBorderDuration,
   );
 
   factory ForceGraphNodeData.from({
@@ -29,8 +35,22 @@ class ForceGraphNodeData {
     Object? data,
     double radius = 0.2,
     bool removable = true,
+    bool? animateBorder,
+    bool? animateBorderOnlyIfSelected,
+    Duration? animateBorderDuration,
   }) {
-    return ForceGraphNodeData(id, edges, style, title, data, radius, removable);
+    return ForceGraphNodeData(
+      id,
+      edges,
+      style,
+      title,
+      data,
+      radius,
+      removable,
+      animateBorder,
+      animateBorderOnlyIfSelected,
+      animateBorderDuration,
+    );
   }
 
   ForceGraphNodeData deepCopy() {
@@ -42,6 +62,9 @@ class ForceGraphNodeData {
       data,
       radius,
       removable,
+      animateBorder,
+      animateBorderOnlyIfSelected,
+      animateBorderDuration,
     );
   }
 
@@ -53,6 +76,9 @@ class ForceGraphNodeData {
     Object? data,
     double? radius,
     bool? removable,
+    bool? animateBorder,
+    bool? animateBorderOnlyIfSelected,
+    Duration? animateBorderDuration,
   }) => ForceGraphNodeData(
     iD ?? this.iD,
     edges ?? this.edges,
@@ -61,6 +87,9 @@ class ForceGraphNodeData {
     data ?? this.data,
     radius ?? this.radius,
     removable ?? this.removable,
+    animateBorder ?? this.animateBorder,
+    animateBorderOnlyIfSelected ?? this.animateBorderOnlyIfSelected,
+    animateBorderDuration ?? this.animateBorderDuration,
   );
 
   @override
@@ -72,7 +101,7 @@ class ForceGraphNodeData {
 
   @override
   String toString() {
-    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable)';
+    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable, animateBorder: $animateBorder, animateBorderOnlyIfSelected: $animateBorderOnlyIfSelected, animateBorderDuration: $animateBorderDuration)';
   }
 
   void removeEdge(int iD) {
@@ -138,9 +167,9 @@ class GraphComponentStyle {
     Color? selectedColor,
     Color? selectedColorBorder,
     Color? colorBorder,
-    double selectedBorderWidth = 0.07,
+    double? selectedBorderWidth,
     double? borderWidth,
-
+    bool borderWidthRatio = false,
     Color? hoverColor,
   }) {
     return GraphComponentStyle.fromGraphComponentStyleElement(
@@ -149,28 +178,10 @@ class GraphComponentStyle {
         selectedColor: selectedColor,
         selectedColorBorder: selectedColorBorder,
         colorBorder: colorBorder,
+        borderWidthRatio: borderWidthRatio,
         selectedBorderWidth: selectedBorderWidth,
         borderWidth: borderWidth,
         hoverColor: hoverColor,
-      ),
-    );
-  }
-
-  factory GraphComponentStyle.default_(
-    Color color, {
-    double borderOpacity = 0.25,
-    double borderWidth = 1,
-    Color? selectedColor,
-    Color? selectedColorBorder,
-    Color? colorBorder,
-    Color? hoverColor,
-    double? selectedBorderWidth,
-  }) {
-    return GraphComponentStyle.fromGraphComponentStyleElement(
-      GraphComponentStyleElement(
-        color: color,
-        colorBorder: color.withValues(alpha: borderOpacity),
-        borderWidth: borderWidth,
       ),
     );
   }
@@ -219,21 +230,43 @@ class GraphComponentStyleElement {
   final Color? colorBorder;
   final double? selectedBorderWidth;
   final double? borderWidth;
+  final bool borderWidthRatio;
   final Color? hoverColor;
   const GraphComponentStyleElement({
     this.color,
     this.selectedColor,
     this.selectedColorBorder,
+    this.borderWidthRatio = false,
     this.colorBorder,
     this.hoverColor,
     this.selectedBorderWidth,
     this.borderWidth,
   });
 
+  factory GraphComponentStyleElement.default_(
+    Color color, {
+    double borderOpacity = 0.25,
+    double borderWidth = 1,
+    Color? selectedColor,
+    Color? selectedColorBorder,
+    Color? colorBorder,
+    Color? hoverColor,
+    bool borderWidthRatio = false,
+    double? selectedBorderWidth,
+  }) {
+    return GraphComponentStyleElement(
+      color: color,
+      colorBorder: color.withValues(alpha: borderOpacity),
+      borderWidth: borderWidth,
+      borderWidthRatio: borderWidthRatio,
+    );
+  }
+
   GraphComponentStyleElement merge(GraphComponentStyleElement element) {
     return copyWith(
       color: element.color,
       selectedColor: element.selectedColor,
+      borderWidthRatio: element.borderWidthRatio,
       selectedColorBorder: element.selectedColorBorder,
       colorBorder: element.colorBorder,
       selectedBorderWidth: element.selectedBorderWidth,
@@ -248,11 +281,13 @@ class GraphComponentStyleElement {
     Color? selectedColorBorder,
     Color? colorBorder,
     double? selectedBorderWidth,
+    bool? borderWidthRatio,
     double? borderWidth,
     Color? hoverColor,
   }) {
     return GraphComponentStyleElement(
       color: color ?? this.color,
+      borderWidthRatio: borderWidthRatio ?? this.borderWidthRatio,
       selectedColor: selectedColor ?? this.selectedColor,
       selectedColorBorder: selectedColorBorder ?? this.selectedColorBorder,
       colorBorder: colorBorder ?? this.colorBorder,
@@ -267,6 +302,7 @@ class GraphComponentStyleElement {
       identical(this, other) ||
       other is GraphComponentStyleElement &&
           color == other.color &&
+          borderWidthRatio == other.borderWidthRatio &&
           selectedColor == other.selectedColor &&
           selectedColorBorder == other.selectedColorBorder &&
           colorBorder == other.colorBorder &&
@@ -276,6 +312,7 @@ class GraphComponentStyleElement {
   @override
   int get hashCode =>
       color.hashCode ^
+      borderWidthRatio.hashCode ^
       selectedColor.hashCode ^
       selectedColorBorder.hashCode ^
       colorBorder.hashCode ^
