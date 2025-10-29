@@ -1617,10 +1617,14 @@ class ForceGraphNode {
     }
   }
 
+  Paint? _paint;
+
+  Color? get currentColor => _paint?.color;
+
   void draw(Canvas canvas, BuildContext context) {
     final style = data.style.fromContext(context);
     final pos = position.toOffset();
-    final paint = Paint()..color = style.color ?? Colors.blue;
+    final paint = _paint = Paint()..color = style.color ?? Colors.blue;
 
     double radius = data.radius;
 
