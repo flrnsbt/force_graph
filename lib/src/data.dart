@@ -156,6 +156,25 @@ class GraphComponentStyle {
     );
   }
 
+  factory GraphComponentStyle.default_(
+    Color color, {
+    double borderOpacity = 0.25,
+    double borderWidth = 1,
+    Color? selectedColor,
+    Color? selectedColorBorder,
+    Color? colorBorder,
+    Color? hoverColor,
+    double? selectedBorderWidth,
+  }) {
+    return GraphComponentStyle.fromGraphComponentStyleElement(
+      GraphComponentStyleElement(
+        color: color,
+        colorBorder: color.withValues(alpha: borderOpacity),
+        borderWidth: borderWidth,
+      ),
+    );
+  }
+
   factory GraphComponentStyle.fromGraphComponentStyleElement(
     GraphComponentStyleElement element,
   ) {
@@ -208,7 +227,7 @@ class GraphComponentStyleElement {
     this.colorBorder,
     this.hoverColor,
     this.selectedBorderWidth,
-    this.borderWidth
+    this.borderWidth,
   });
 
   GraphComponentStyleElement merge(GraphComponentStyleElement element) {
