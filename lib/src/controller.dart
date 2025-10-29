@@ -234,7 +234,7 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void zoomOnNode(String nodeID, [double? zoom]) {
+  Future<void> zoomOnNode(String nodeID, [double? zoom]) async {
     zoom ??= (viewportController.maxZoom + viewportController.minZoom) / 2;
     final node = _nodes[nodeID]!;
     final pos =
@@ -244,7 +244,7 @@ class ForceGraphController extends ChangeNotifier {
     final shift = viewportController.screenCenter - pos;
     viewportController.setPan(shift);
     if (zoom > viewportController.zoom) {
-      viewportController.applyZoom(zoom);
+      await viewportController.applyZoom(zoom);
     }
   }
 
@@ -1256,7 +1256,7 @@ class ViewportController {
   final double minZoom;
   final double maxZoom;
 
-  void multiplyZoom(
+  Future<void> multiplyZoom(
     double scaleDelta, {
     Offset? focalPoint,
     double unboundedProgressFactor = 0.5,
@@ -1270,13 +1270,13 @@ class ViewportController {
     );
   }
 
-  void applyZoom(
+  Future<void> applyZoom(
     double zoom, {
     Offset? focalPoint,
     double unboundedProgressFactor = 0.5,
     Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
-  }) {
+  }) async {
     zoom = zoom.clamp(minZoom, maxZoom);
     if (zoom == this.zoom) {
       _panAnimateElement?.cancel();
@@ -1287,18 +1287,20 @@ class ViewportController {
     final scale = zoom / this.zoom;
     final Offset newPanOffset = focalPoint - (focalPoint - panOffset) * scale;
     if (animationDuration == null || animationDuration > Duration.zero) {
-      animateToPan(
-        newPanOffset,
-        animationDuration: animationDuration,
-        curve: curve,
-        unboundedProgressFactor: unboundedProgressFactor,
-      );
-      animateZoomTo(
-        zoom,
-        animationDuration: animationDuration,
-        curve: curve,
-        unboundedProgressFactor: unboundedProgressFactor,
-      );
+      await Future.wait([
+        animateToPan(
+          newPanOffset,
+          animationDuration: animationDuration,
+          curve: curve,
+          unboundedProgressFactor: unboundedProgressFactor,
+        ),
+        animateZoomTo(
+          zoom,
+          animationDuration: animationDuration,
+          curve: curve,
+          unboundedProgressFactor: unboundedProgressFactor,
+        ),
+      ]);
     } else {
       panOffset = newPanOffset;
       this.zoom = zoom;
@@ -1628,7 +1630,6 @@ class ForceGraphNode {
         strokeRadius = radius + borderWidth * r;
       }
       newPaint.strokeWidth = (strokeRadius - radius) * 2;
-
 
       if (_opacity != 1) {
         newPaint.color = newPaint.color.withValues(
