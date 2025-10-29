@@ -234,7 +234,11 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  Future<void> zoomOnNode(String nodeID, [double? zoom]) async {
+  Future<void> zoomOnNode(
+    String nodeID, [
+    double? zoom,
+    bool force = false,
+  ]) async {
     zoom ??= (viewportController.maxZoom + viewportController.minZoom) / 2;
     final node = _nodes[nodeID]!;
     final pos =
@@ -243,8 +247,8 @@ class ForceGraphController extends ChangeNotifier {
         viewportController.scale;
     final shift = viewportController.screenCenter - pos;
     viewportController.setPan(shift);
-    if (zoom > viewportController.zoom) {
-      await viewportController.applyZoom(zoom);
+    if (zoom > viewportController.zoom || force) {
+      await viewportController.applyZoom(zoom, force: force);
     }
   }
 
@@ -1276,8 +1280,11 @@ class ViewportController {
     double unboundedProgressFactor = 0.5,
     Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
+    bool force = false,
   }) async {
-    zoom = zoom.clamp(minZoom, maxZoom);
+    if (!force) {
+      zoom = zoom.clamp(minZoom, maxZoom);
+    }
     if (zoom == this.zoom) {
       _panAnimateElement?.cancel();
       _zoomAnimateElement?.cancel();
@@ -1299,6 +1306,7 @@ class ViewportController {
           animationDuration: animationDuration,
           curve: curve,
           unboundedProgressFactor: unboundedProgressFactor,
+          force: force,
         ),
       ]);
     } else {
@@ -1327,8 +1335,11 @@ class ViewportController {
     Duration? animationDuration = const Duration(milliseconds: 500),
     Curve curve = Curves.linear,
     double unboundedProgressFactor = 0.5,
+    bool force = false,
   }) async {
-    zoom = zoom.clamp(minZoom, maxZoom);
+    if (!force) {
+      zoom = zoom.clamp(minZoom, maxZoom);
+    }
     _zoomAnimateElement?.cancel();
     _zoomAnimateElement = AnimateElement.fromNum(
       zoom,

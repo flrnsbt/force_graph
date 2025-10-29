@@ -39,7 +39,7 @@ class ZoomControllerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget slider = Slider(
       padding: EdgeInsets.zero,
-      value: zoom,
+      value: zoom.clamp(minZoom, maxZoom),
       min: minZoom,
       max: maxZoom,
       divisions: ((maxZoom - minZoom) / step).round(),
