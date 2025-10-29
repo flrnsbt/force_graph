@@ -161,18 +161,38 @@ class ForceGraphController extends ChangeNotifier {
     return _ground!;
   }
 
-  void initWorld(TickerProvider state) {
-    _ticker = state.createTicker(_stepWorld);
-    if (isReady) {
-      _startTicker();
-    }
+  void initWorld(TickerProvider vsync) {
+    disposeTicker();
+    _elapsedMs = 0;
+
+    scheduleMicrotask(() {
+      if (vsync is State && !(vsync as State).mounted) return;
+
+      final newTicker = vsync.createTicker(_stepWorld);
+      // if (_ticker == null) {
+      //   _ticker = newTicker;
+      // } else {
+      //   try {
+      //     if (_ticker!.isActive) {
+      //       _ticker!.stop(canceled: true);
+      //     }
+      //     _ticker!.absorbTicker(newTicker);
+      //   } catch (e) {
+      //     _ticker = newTicker;
+      //   }
+      // }
+      _ticker = newTicker;
+
+      if (isReady) {
+        _startTicker();
+      }
+    });
+
+    
   }
 
   void _startTicker() {
-    if (_ticker == null) {
-      return;
-    }
-    if (!_ticker!.isActive) {
+    if (_ticker != null && !_ticker!.isActive) {
       _ticker!.start();
     }
   }
@@ -439,14 +459,13 @@ class ForceGraphController extends ChangeNotifier {
           final nodeBiggestRadius = _getNodeBiggestRadius(data);
           _graphBuilder.minDistance = nodeBiggestRadius * 2.5;
         }
+        _isReady = false;
+        _isLoading = true;
         if (notifyReadyStatusChange) {
-          _isReady = false;
-          _isLoading = true;
           notifyListeners();
         }
         final processedNodes = await _performLayout(data);
         await _loadData(processedNodes);
-
         _startTicker();
       }
       if (_completer != null && _completer!.isCompleted == false) {
@@ -682,11 +701,11 @@ class ForceGraphController extends ChangeNotifier {
 
   @override
   void dispose() {
+    disposeTicker();
     _scheduleAutoMove?.cancel();
     _hoverDebounceTimer?.cancel();
     _graphBuilder.stop();
     super.dispose();
-    disposeTicker();
     clear();
   }
 
@@ -797,8 +816,14 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   void disposeTicker() {
-    _ticker?.dispose();
-    _ticker = null;
+    try {
+      final t = _ticker;
+      _ticker = null;
+
+      if (t != null) {
+        t.dispose();
+      }
+    } catch (_) {}
   }
 
   bool _isDraggingNode = false;

@@ -127,12 +127,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     super.initState();
     widget.controller.initWorld(this);
     _focusNode.onKeyEvent = widget.controller.onKeyEvent;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.addListener(_refreshUI);
-      if (_focusNode.hasFocus || !_focusNode.hasFocus) {
-        _ensureFocus();
-      }
-    });
+    widget.controller.addListener(_refreshUI);
+    _ensureFocus();
     if (widget.onSelectionChanged != null) {
       widget.controller.addOnSelectionChangedListener(
         widget.onSelectionChanged!,
@@ -330,9 +326,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
 
   @override
   void dispose() {
-    widget.controller.disposeTicker();
     widget.controller.removeListener(_refreshUI);
-
+    widget.controller.stop();
+    widget.controller.disposeTicker();
     _exitHoverTimer?.cancel();
     if (widget.onSecondaryTappedNode != null) {
       widget.controller.removeNodeOnSecondaryTapListener(
@@ -349,7 +345,6 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     } else {
       _focusNode.onKeyEvent = null;
     }
-
     super.dispose();
   }
 
