@@ -32,6 +32,8 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool enableSelection;
 
+  final bool disableHoverOnHiddenComponents;
+
   final double? nodeMinimumSpacing;
 
   final double? nodeDragMaxForce;
@@ -80,6 +82,7 @@ class ForceGraphController extends ChangeNotifier {
     this.edgeHightlightColor,
     this.edgeHiddenOpacity,
     this.nodeHiddenOpacity,
+    this.disableHoverOnHiddenComponents = true,
     double scale = 10,
     double minZoom = 0.1,
     double maxZoom = 2,
@@ -1134,12 +1137,17 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       }
 
       final node = findBodyAt(worldPos);
-      hoverNode(node?.iD, programatical: false);
+      final joint = node == null ? findJointAt(worldPos) : null;
 
-      if (node == null) {
-        final joint = findJointAt(worldPos)?.data.iD;
-        hoverEdge(joint, programatical: false);
+      if (node != null && (!disableHoverOnHiddenComponents || node.opaque)) {
+        hoverNode(node.iD, programatical: false);
+        hoverEdge(null, programatical: false);
+      } else if (joint != null &&
+          (!disableHoverOnHiddenComponents || !joint.hidden)) {
+        hoverNode(null, programatical: false);
+        hoverEdge(joint.data.iD, programatical: false);
       } else {
+        hoverNode(null, programatical: false);
         hoverEdge(null, programatical: false);
       }
       _updateAutoMoveStatus();
@@ -1473,7 +1481,7 @@ class ForceGraphEdge {
         selectedNodeIDs.contains(data.target);
   }
 
-  bool get hide {
+  bool get hidden {
     return _controller._selectedNodeIds.isNotEmpty && !highlight;
   }
 
@@ -1495,7 +1503,7 @@ class ForceGraphEdge {
 
     weight /= _controller.viewportController.scale / 2;
 
-    if (hide) {
+    if (hidden) {
       paint.color = paint.color.withValues(
         alpha: paint.color.a * (_controller.edgeHiddenOpacity ?? 0.05),
       );
