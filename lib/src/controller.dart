@@ -187,8 +187,6 @@ class ForceGraphController extends ChangeNotifier {
         _startTicker();
       }
     });
-
-    
   }
 
   void _startTicker() {
@@ -1560,19 +1558,20 @@ class ForceGraphNode {
     return ForceGraphNode(body, controller, enableNodesAutoMove);
   }
 
-  void Function()? __onTap;
+  NodeTapResult Function()? __onTap;
 
-  void setOnTap(void Function()? onTap) {
+  void setOnTap(NodeTapResult Function()? onTap) {
     __onTap = onTap;
   }
 
   void onTap() {
+    NodeTapResult? result;
     if (__onTap != null) {
-      __onTap!();
+      result = __onTap!();
     }
     _controller._onTap(this);
     selected = !selected;
-    if (selected) {
+    if (selected && result == NodeTapResult.focus) {
       _animateCenter();
     }
   }
@@ -1795,6 +1794,8 @@ enum _ForceDirection {
 
   static _ForceDirection getAt(int i) => values[i % values.length];
 }
+
+enum NodeTapResult { focus, none }
 
 class _DestroyListener implements DestroyListener {
   final ForceGraphController controller;
