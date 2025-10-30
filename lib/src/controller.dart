@@ -330,11 +330,15 @@ class ForceGraphController extends ChangeNotifier {
   }
 
   ForceGraphNode getNode(String nodeID) {
-    final node = _nodes[nodeID];
+    final node = getNodeOrNull(nodeID);
     if (node == null) {
       throw 'Node $nodeID not found';
     }
     return node;
+  }
+
+  ForceGraphNode? getNodeOrNull(String nodeID) {
+    return _nodes[nodeID];
   }
 
   Set<String> removeNode(String nodeID) {
