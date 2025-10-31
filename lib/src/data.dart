@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:force_graph/src/controller.dart' show ForceGraphNode;
 import 'package:forge2d/forge2d.dart';
 
+// returns true if drawing was handled, false otherwise
+// if drawing is marked as not handled, the default painter will be used
+// based on the node style provided
 typedef NodePainter =
-    void Function(Canvas canvas, ForceGraphNode node, BuildContext context);
+    bool Function(Canvas canvas, ForceGraphNode node, BuildContext context);
 
 class ForceGraphNodeData {
   final String iD;

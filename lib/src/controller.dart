@@ -1634,9 +1634,8 @@ class ForceGraphNode {
 
   @protected
   void draw(Canvas canvas, BuildContext context) {
-    if (data.customPainter != null) {
-      data.customPainter!(canvas, this, context);
-    } else {
+    if (data.customPainter == null ||
+        !data.customPainter!(canvas, this, context)) {
       final style = data.style.fromContext(context);
       final pos = position.toOffset();
       final paint = _paint = Paint()..color = style.color ?? Colors.blue;

@@ -1,6 +1,6 @@
 name: force_graph
 description: "Forge2D based force graph with multiple graph layout algorithms (MDS, Spring Embedder, Distance based) and realistic physics."
-version: 0.5.4
+version: 0.5.5
 homepage: https://github.com/flrnsbt/force_graph
 
 environment:
