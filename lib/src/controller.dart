@@ -1632,19 +1632,44 @@ class ForceGraphNode {
 
   Color? get currentColor => _paint?.color;
 
+  DefaultNodePainter getDefaultNodePainter(BuildContext context) {
+    final style = data.style.fromContext(context);
+    final paint = Paint()..color = style.color ?? Colors.blue;
+
+    final bool selected = this.selected;
+    if (selected) {
+      if (style.selectedColor != null) {
+        paint.color = style.selectedColor!;
+      }
+    } else if (hovered) {
+      if (style.hoverColor != null) {
+        paint.color = style.hoverColor!;
+      }
+    }
+
+    if (_opacity != 1) {
+      paint.color = paint.color.withValues(alpha: paint.color.a * _opacity);
+    }
+
+    double radius = data.radius;
+
+    if (hovered) {
+      radius *= 1.25;
+    }
+
+    return (paint, radius);
+  }
+
   @protected
   void draw(Canvas canvas, BuildContext context) {
+    final pos = position.toOffset();
+
     if (data.customPainter == null ||
-        !data.customPainter!(canvas, this, context)) {
+        !data.customPainter!(canvas, this, pos, context)) {
       final style = data.style.fromContext(context);
-      final pos = position.toOffset();
-      final paint = _paint = Paint()..color = style.color ?? Colors.blue;
+      final (paint, radius) = getDefaultNodePainter(context);
+      _paint = paint;
 
-      double radius = data.radius;
-
-      if (hovered) {
-        radius *= 1.25;
-      }
       final bool selected = this.selected;
       double borderWidth = style.borderWidth ?? 0;
       Color? borderColor = style.colorBorder;
@@ -1654,13 +1679,6 @@ class ForceGraphNode {
         }
         if (style.selectedColorBorder != null) {
           borderColor = style.selectedColorBorder;
-        }
-        if (style.selectedColor != null) {
-          paint.color = style.selectedColor!;
-        }
-      } else if (hovered) {
-        if (style.hoverColor != null) {
-          paint.color = style.hoverColor!;
         }
       }
       if (borderWidth > 0) {
@@ -1700,9 +1718,6 @@ class ForceGraphNode {
         }
 
         canvas.drawCircle(pos, strokeRadius, newPaint);
-      }
-      if (_opacity != 1) {
-        paint.color = paint.color.withValues(alpha: paint.color.a * _opacity);
       }
 
       canvas.drawCircle(pos, radius, paint);
@@ -1797,6 +1812,8 @@ class ForceGraphNode {
     _controller._onNodeSecondaryTap(this, screenPos);
   }
 }
+
+typedef DefaultNodePainter = (Paint painter, double radius);
 
 enum _ForceDirection {
   up,

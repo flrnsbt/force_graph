@@ -8,7 +8,12 @@ import 'package:forge2d/forge2d.dart';
 // if drawing is marked as not handled, the default painter will be used
 // based on the node style provided
 typedef NodePainter =
-    bool Function(Canvas canvas, ForceGraphNode node, BuildContext context);
+    bool Function(
+      Canvas canvas,
+      ForceGraphNode node,
+      Offset position,
+      BuildContext context,
+    );
 
 class ForceGraphNodeData {
   final String iD;
