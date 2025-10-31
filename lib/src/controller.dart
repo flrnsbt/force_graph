@@ -574,14 +574,15 @@ class ForceGraphController extends ChangeNotifier {
 
   final __onSelectionChangeds = <void Function(List<ForceGraphNode>)>[];
 
-  final __onHovereds = <void Function(ForceGraphNode?)>[];
+  final __onHovereds =
+      <void Function(ForceGraphNode? node, bool programatical)>[];
 
   final __onNodeSecondaryTaps = <void Function(ForceGraphNode, Offset)>[];
   final __onSecondaryTaps = <void Function(Offset)>[];
 
-  void _onHover(ForceGraphNode? node) {
+  void _onHover(ForceGraphNode? node, bool programatical) {
     for (final f in __onHovereds) {
-      f(node);
+      f(node, programatical);
     }
   }
 
@@ -639,7 +640,9 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
-  void addOnHoverListener(void Function(ForceGraphNode?) onHover) {
+  void addOnHoverListener(
+    void Function(ForceGraphNode? node, bool programatical) onHover,
+  ) {
     __onHovereds.add(onHover);
   }
 
@@ -665,7 +668,9 @@ class ForceGraphController extends ChangeNotifier {
     __onNodeSecondaryTaps.remove(onSecondaryTap);
   }
 
-  void removeOnHoverListener(void Function(ForceGraphNode?) onHover) {
+  void removeOnHoverListener(
+    void Function(ForceGraphNode? node, bool programatical) onHover,
+  ) {
     __onHovereds.remove(onHover);
   }
 
@@ -706,7 +711,7 @@ class ForceGraphController extends ChangeNotifier {
     _selectedNodeIds.clear();
     _joints.clear();
     _nodes.clear();
-    _onHover(null);
+    _onHover(null, true);
     _onSelectionChanged();
   }
 
@@ -953,14 +958,16 @@ class ForceGraphController extends ChangeNotifier {
     if (nodeID != $_hoveredNodeID) {
       if ($_hoveredNodeID != null) {
         final node = _nodes[$_hoveredNodeID]!;
-        node.hovered = false;
+        node._hovered = false;
       }
       if (nodeID != null) {
         final node = _nodes[nodeID];
         if (node == null) {
           return false;
         }
-        node.hovered = true;
+        _onHover(node, programatical);
+
+        node._hovered = true;
         if (animateToCenter) {
           node._animateCenter();
         }
@@ -1612,13 +1619,6 @@ class ForceGraphNode {
 
   bool get hovered => _hovered;
 
-  set hovered(bool value) {
-    if (value != _hovered) {
-      _hovered = value;
-      _controller._onHover(value ? this : null);
-    }
-  }
-
   bool get selected => _controller._selectedNodeIds.contains(iD);
 
   void _animateCenter() {
@@ -1831,7 +1831,7 @@ class ForceGraphNode {
 
   void onSecondaryTap(Offset screenPos) {
     if (hovered) {
-      hovered = false;
+      _hovered = false;
     }
     _controller._onNodeSecondaryTap(this, screenPos);
   }
