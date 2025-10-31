@@ -1632,77 +1632,82 @@ class ForceGraphNode {
 
   Color? get currentColor => _paint?.color;
 
+  @protected
   void draw(Canvas canvas, BuildContext context) {
-    final style = data.style.fromContext(context);
-    final pos = position.toOffset();
-    final paint = _paint = Paint()..color = style.color ?? Colors.blue;
+    if (data.customPainter != null) {
+      data.customPainter!(canvas, this, context);
+    } else {
+      final style = data.style.fromContext(context);
+      final pos = position.toOffset();
+      final paint = _paint = Paint()..color = style.color ?? Colors.blue;
 
-    double radius = data.radius;
+      double radius = data.radius;
 
-    if (hovered) {
-      radius *= 1.25;
-    }
-    final bool selected = this.selected;
-    double borderWidth = style.borderWidth ?? 0;
-    Color? borderColor = style.colorBorder;
-    if (selected) {
-      if (style.selectedBorderWidth != null) {
-        borderWidth = style.selectedBorderWidth!;
+      if (hovered) {
+        radius *= 1.25;
       }
-      if (style.selectedColorBorder != null) {
-        borderColor = style.selectedColorBorder;
+      final bool selected = this.selected;
+      double borderWidth = style.borderWidth ?? 0;
+      Color? borderColor = style.colorBorder;
+      if (selected) {
+        if (style.selectedBorderWidth != null) {
+          borderWidth = style.selectedBorderWidth!;
+        }
+        if (style.selectedColorBorder != null) {
+          borderColor = style.selectedColorBorder;
+        }
+        if (style.selectedColor != null) {
+          paint.color = style.selectedColor!;
+        }
+      } else if (hovered) {
+        if (style.hoverColor != null) {
+          paint.color = style.hoverColor!;
+        }
       }
-      if (style.selectedColor != null) {
-        paint.color = style.selectedColor!;
-      }
-    } else if (hovered) {
-      if (style.hoverColor != null) {
-        paint.color = style.hoverColor!;
-      }
-    }
-    if (borderWidth > 0) {
-      if (style.borderWidthRatio) {
-        borderWidth *= radius;
-      } else {
-        borderWidth /= 2;
-      }
-      final animateBorder = data.animateBorder ?? _controller.animateBorders;
-      final animateBorderOnlyIfSelected =
-          data.animateBorderOnlyIfSelected ??
-          _controller.animateBorderOnlyIfSelected;
-      final newPaint = Paint.from(paint);
-      newPaint.style = PaintingStyle.stroke;
-      newPaint.color = borderColor ?? Colors.transparent;
+      if (borderWidth > 0) {
+        if (style.borderWidthRatio) {
+          borderWidth *= radius;
+        } else {
+          borderWidth /= 2;
+        }
+        final animateBorder = data.animateBorder ?? _controller.animateBorders;
+        final animateBorderOnlyIfSelected =
+            data.animateBorderOnlyIfSelected ??
+            _controller.animateBorderOnlyIfSelected;
+        final newPaint = Paint.from(paint);
+        newPaint.style = PaintingStyle.stroke;
+        newPaint.color = borderColor ?? Colors.transparent;
 
-      double strokeRadius = radius + borderWidth;
+        double strokeRadius = radius + borderWidth;
 
-      if (animateBorder && (!animateBorderOnlyIfSelected || selected)) {
-        final duration =
-            (data.animateBorderDuration ?? _controller.animateBordersDuration)
-                .inMicroseconds;
-        double r = 2 * (_controller._elapsedMs % duration) / duration;
+        if (animateBorder && (!animateBorderOnlyIfSelected || selected)) {
+          final duration =
+              (data.animateBorderDuration ?? _controller.animateBordersDuration)
+                  .inMicroseconds;
+          double r = 2 * (_controller._elapsedMs % duration) / duration;
 
-        if (r > 1) {
-          r = 2 - r;
+          if (r > 1) {
+            r = 2 - r;
+          }
+
+          strokeRadius = radius + borderWidth * r;
+        }
+        newPaint.strokeWidth = (strokeRadius - radius) * 2;
+
+        if (_opacity != 1) {
+          newPaint.color = newPaint.color.withValues(
+            alpha: newPaint.color.a * _opacity,
+          );
         }
 
-        strokeRadius = radius + borderWidth * r;
+        canvas.drawCircle(pos, strokeRadius, newPaint);
       }
-      newPaint.strokeWidth = (strokeRadius - radius) * 2;
-
       if (_opacity != 1) {
-        newPaint.color = newPaint.color.withValues(
-          alpha: newPaint.color.a * _opacity,
-        );
+        paint.color = paint.color.withValues(alpha: paint.color.a * _opacity);
       }
 
-      canvas.drawCircle(pos, strokeRadius, newPaint);
+      canvas.drawCircle(pos, radius, paint);
     }
-    if (_opacity != 1) {
-      paint.color = paint.color.withValues(alpha: paint.color.a * _opacity);
-    }
-
-    canvas.drawCircle(pos, radius, paint);
   }
 
   @override

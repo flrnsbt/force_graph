@@ -1,7 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:force_graph/src/controller.dart' show ForceGraphNode;
 import 'package:forge2d/forge2d.dart';
+
+typedef NodePainter =
+    void Function(Canvas canvas, ForceGraphNode node, BuildContext context);
 
 class ForceGraphNodeData {
   final String iD;
@@ -14,6 +18,7 @@ class ForceGraphNodeData {
   final bool? animateBorder;
   final bool? animateBorderOnlyIfSelected;
   final Duration? animateBorderDuration;
+  final NodePainter? customPainter;
   const ForceGraphNodeData(
     this.iD,
     this.edges,
@@ -25,6 +30,7 @@ class ForceGraphNodeData {
     this.animateBorder,
     this.animateBorderOnlyIfSelected,
     this.animateBorderDuration,
+    this.customPainter,
   );
 
   factory ForceGraphNodeData.from({
@@ -38,6 +44,7 @@ class ForceGraphNodeData {
     bool? animateBorder,
     bool? animateBorderOnlyIfSelected,
     Duration? animateBorderDuration,
+    NodePainter? customPainter,
   }) {
     return ForceGraphNodeData(
       id,
@@ -50,6 +57,7 @@ class ForceGraphNodeData {
       animateBorder,
       animateBorderOnlyIfSelected,
       animateBorderDuration,
+      customPainter,
     );
   }
 
@@ -65,6 +73,7 @@ class ForceGraphNodeData {
       animateBorder,
       animateBorderOnlyIfSelected,
       animateBorderDuration,
+      customPainter,
     );
   }
 
@@ -79,6 +88,7 @@ class ForceGraphNodeData {
     bool? animateBorder,
     bool? animateBorderOnlyIfSelected,
     Duration? animateBorderDuration,
+    NodePainter? customPainter,
   }) => ForceGraphNodeData(
     iD ?? this.iD,
     edges ?? this.edges,
@@ -90,6 +100,7 @@ class ForceGraphNodeData {
     animateBorder ?? this.animateBorder,
     animateBorderOnlyIfSelected ?? this.animateBorderOnlyIfSelected,
     animateBorderDuration ?? this.animateBorderDuration,
+    customPainter ?? this.customPainter,
   );
 
   @override
@@ -101,7 +112,7 @@ class ForceGraphNodeData {
 
   @override
   String toString() {
-    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable, animateBorder: $animateBorder, animateBorderOnlyIfSelected: $animateBorderOnlyIfSelected, animateBorderDuration: $animateBorderDuration)';
+    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable, animateBorder: $animateBorder, animateBorderOnlyIfSelected: $animateBorderOnlyIfSelected, animateBorderDuration: $animateBorderDuration, customPainter: $customPainter)';
   }
 
   void removeEdge(int iD) {
