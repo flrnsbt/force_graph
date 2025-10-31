@@ -1766,6 +1766,8 @@ class ForceGraphNode {
 
   double _opacity = 1;
 
+  double get opacity => _opacity;
+
   bool get opaque => _opacity >= 1;
 
   bool moving([double tolerance = 0.1]) {
