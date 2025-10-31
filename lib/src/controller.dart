@@ -34,6 +34,9 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool disableHoverOnHiddenComponents;
 
+  final Duration hoverEnterDebounceDuration;
+  final Duration hoverExitDebounceDuration;
+
   final double? nodeMinimumSpacing;
 
   final double? nodeDragMaxForce;
@@ -83,6 +86,8 @@ class ForceGraphController extends ChangeNotifier {
     this.edgeHiddenOpacity,
     this.nodeHiddenOpacity,
     this.disableHoverOnHiddenComponents = true,
+    this.hoverEnterDebounceDuration = const Duration(milliseconds: 10),
+    this.hoverExitDebounceDuration = const Duration(milliseconds: 200),
     double scale = 10,
     double minZoom = 0.1,
     double maxZoom = 2,
@@ -692,6 +697,7 @@ class ForceGraphController extends ChangeNotifier {
   /// changed listeners.
   void clear() {
     _hoverDebounceTimer?.cancel();
+    _isHovering = false;
     for (final node in _nodes.values) {
       try {
         world.destroyBody(node.body);
@@ -934,6 +940,8 @@ class ForceGraphController extends ChangeNotifier {
 
   Timer? _hoverDebounceTimer;
 
+  bool _isHovering = false;
+
   bool get canAutoMove =>
       isHovering && !isDraggingNode && !isPanning && !isSelecting;
 
@@ -1130,25 +1138,41 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
     _scheduleAutoMove?.cancel();
     _hoverDebounceTimer?.cancel();
 
-    _hoverDebounceTimer = Timer(const Duration(milliseconds: 10), () {
-      Vector2? worldPos;
-      if (position != null) {
-        worldPos = viewportController.screenToWorld(position);
-      }
+    Vector2? worldPos;
+    if (position != null) {
+      worldPos = viewportController.screenToWorld(position);
+    }
 
-      final node = findBodyAt(worldPos);
-      final joint = node == null ? findJointAt(worldPos) : null;
+    final node = findBodyAt(worldPos);
+    final joint = node == null ? findJointAt(worldPos) : null;
 
+    final willBeHovering =
+        (node != null && (!disableHoverOnHiddenComponents || node.opaque)) ||
+        (joint != null && (!disableHoverOnHiddenComponents || !joint.hidden));
+
+    final isEntering = !_isHovering && willBeHovering;
+    final isExiting = _isHovering && !willBeHovering;
+
+    final debounceDuration = isEntering
+        ? hoverEnterDebounceDuration
+        : isExiting
+        ? hoverExitDebounceDuration
+        : hoverEnterDebounceDuration; // fallback
+
+    _hoverDebounceTimer = Timer(debounceDuration, () {
       if (node != null && (!disableHoverOnHiddenComponents || node.opaque)) {
         hoverNode(node.iD, programatical: false);
         hoverEdge(null, programatical: false);
+        _isHovering = true;
       } else if (joint != null &&
           (!disableHoverOnHiddenComponents || !joint.hidden)) {
         hoverNode(null, programatical: false);
         hoverEdge(joint.data.iD, programatical: false);
+        _isHovering = true;
       } else {
         hoverNode(null, programatical: false);
         hoverEdge(null, programatical: false);
+        _isHovering = false;
       }
       _updateAutoMoveStatus();
       _hoverPosition = position;
@@ -1707,7 +1731,7 @@ class ForceGraphNode {
             r = 2 - r;
           }
 
-          strokeRadius = radius + borderWidth * r;
+          strokeRadius = radius + borderWidth * (r * 0.7 + 0.3);
         }
         newPaint.strokeWidth = (strokeRadius - radius) * 2;
 

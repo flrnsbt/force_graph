@@ -397,6 +397,7 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         child: MouseRegion(
           onEnter: (_) {
             _cancelExitTimer();
+            _notifyHoverTooltip(offset!);
             _overTooltip = true;
           },
           onExit: (_) {
@@ -422,6 +423,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
         child: MouseRegion(
           onEnter: (_) {
             _cancelExitTimer();
+            _notifyHoverTooltip(position);
+
             _overTooltip = true;
           },
           onExit: (_) {
@@ -436,6 +439,10 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       );
     }
     return const SizedBox.shrink();
+  }
+
+  void _notifyHoverTooltip(Offset position) {
+    widget.controller.updateHover(position);
   }
 }
 
