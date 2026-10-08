@@ -10,7 +10,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
     input,
     onEvent: (controller, ImMap input) {
       final unwrappedInput = input.toUnwrappedMap();
-      final iterations = unwrappedInput['iterations'] as int;
+      final iterations = (unwrappedInput['iterations'] as num).toInt();
       double? repulsion = (unwrappedInput['repulsion'] as num?)?.toDouble();
       double? attraction = (unwrappedInput['attraction'] as num?)?.toDouble();
       if (repulsion == -1) repulsion = null;
@@ -24,7 +24,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final rawPreserved =
           unwrappedInput['positionsToPreserve'] as Map? ?? {};
       final int correctionIterations =
-          unwrappedInput['correctionIterations'] as int;
+          (unwrappedInput['correctionIterations'] as num).toInt();
       final correctionFactor =
           (unwrappedInput['correctionFactor'] as num).toDouble();
 
