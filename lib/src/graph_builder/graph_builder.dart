@@ -79,7 +79,7 @@ class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
         return false;
       },
     );
-    _positions.addAll(_dartifyPoints(result['positions'] as Map));
+    _positions.addAll(_dartifyPoints(result['positions']));
   }
 }
 
@@ -206,7 +206,7 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
         return false;
       },
     );
-    _positions.addAll(_dartifyPoints(result['positions'] as Map));
+    _positions.addAll(_dartifyPoints(result['positions']));
   }
 
   @override

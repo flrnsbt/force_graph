@@ -22,7 +22,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
       final rawPreserved =
-          unwrappedInput['positionsToPreserve'] as Map<String, dynamic>? ?? {};
+          unwrappedInput['positionsToPreserve'] as Map? ?? {};
       final int correctionIterations =
           unwrappedInput['correctionIterations'] as int;
       final correctionFactor =
@@ -130,7 +130,7 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
 
       if (rawPreserved.isNotEmpty) {
         for (final entry in rawPreserved.entries) {
-          final point = entry.value as Map<String, dynamic>;
+          final point = entry.value as Map;
           positions[entry.key] = validatePosition(
             Point<double>(
               (point['x'] as num).toDouble(),
