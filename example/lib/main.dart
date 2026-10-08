@@ -368,7 +368,7 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
           Positioned(
             top: 0,
             left: 0,
-            right: 48,
+            right: 64,
             child: _buildTopBar(context, isCompact),
           ),
 
