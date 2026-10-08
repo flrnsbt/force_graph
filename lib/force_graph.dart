@@ -4,3 +4,4 @@ export 'package:force_graph/src/controller.dart'
     hide ForceGraphControllerControlsExtension;
 export 'package:force_graph/src/ui/control_bar.dart';
 export 'package:force_graph/src/graph_builder/graph_builder.dart';
+export 'package:forge2d/forge2d.dart' show Vector2;

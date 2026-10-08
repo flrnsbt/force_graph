@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:force_graph/src/controller.dart';
 import 'package:force_graph/src/ui/control_bar.dart';
@@ -24,6 +23,7 @@ class ForceGraphWidget extends StatefulWidget {
     this.customControlBarBuilder,
     this.focusNode,
     this.contextMenuBuilder,
+    this.nodeContextMenuBuilder,
     this.defaultControlBarForegroundColor,
     this.defaultControlBarBackgroundColor,
     this.onSelectionChanged,
@@ -44,6 +44,14 @@ class ForceGraphWidget extends StatefulWidget {
     VoidCallback dismiss,
   )?
   contextMenuBuilder;
+  final Widget Function(
+    BuildContext context,
+    ForceGraphController controller,
+    ForceGraphNode node,
+    Offset position,
+    VoidCallback dismiss,
+  )?
+  nodeContextMenuBuilder;
   final Widget Function(BuildContext context, ForceGraphNode node)?
   nodeTooltipBuilder;
   final Offset Function(Offset position)? offsetCorrection;
@@ -135,13 +143,42 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       );
     }
 
-    if (widget.onSecondaryTappedNode != null) {
-      widget.controller.addNodeOnSecondaryTapListener(
-        widget.onSecondaryTappedNode!,
-      );
-    }
-
+    widget.controller.addNodeOnSecondaryTapListener(_onNodeSecondaryTap);
     widget.controller.addOnSecondaryTapListener(_onSecondaryTap);
+  }
+
+  @override
+  void didUpdateWidget(ForceGraphWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller.removeListener(_refreshUI);
+      oldWidget.controller.removeNodeOnSecondaryTapListener(_onNodeSecondaryTap);
+      oldWidget.controller.removeOnSecondaryTapListener(_onSecondaryTap);
+      if (oldWidget.onSelectionChanged != null) {
+        oldWidget.controller.removeOnSelectionChangedListener(oldWidget.onSelectionChanged!);
+      }
+      oldWidget.controller.stop();
+      oldWidget.controller.disposeTicker();
+
+      _secondaryTapPosition = null;
+      _secondaryTappedNode = null;
+
+      widget.controller.initWorld(this);
+      _focusNode.onKeyEvent = widget.controller.onKeyEvent;
+      widget.controller.addListener(_refreshUI);
+      widget.controller.addNodeOnSecondaryTapListener(_onNodeSecondaryTap);
+      widget.controller.addOnSecondaryTapListener(_onSecondaryTap);
+      if (widget.onSelectionChanged != null) {
+        widget.controller.addOnSelectionChangedListener(widget.onSelectionChanged!);
+      }
+      if (oldWidget.controller.viewportController.hasSize) {
+        widget.controller.updateCanvasSize(
+          oldWidget.controller.viewportController.screenSize,
+        );
+      }
+      _ensureFocus();
+      if (mounted) setState(() {});
+    }
   }
 
   void _ensureFocus() {
@@ -151,9 +188,23 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   Offset? _secondaryTapPosition;
+  ForceGraphNode? _secondaryTappedNode;
+
+  void _onNodeSecondaryTap(ForceGraphNode node, Offset screenPos) {
+    widget.onSecondaryTappedNode?.call(node, screenPos);
+    if (widget.nodeContextMenuBuilder != null) {
+      if (_secondaryTapPosition != screenPos || _secondaryTappedNode != node) {
+        _secondaryTapPosition = screenPos;
+        _secondaryTappedNode = node;
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
   void _onSecondaryTap(Offset offset) {
-    if (_secondaryTapPosition != offset) {
+    if (_secondaryTapPosition != offset || _secondaryTappedNode != null) {
       _secondaryTapPosition = offset;
+      _secondaryTappedNode = null;
       if (mounted) {
         setState(() {});
       }
@@ -202,15 +253,13 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
             widget.controller.updateCanvasSize(size);
           },
           (canvas) {
+            canvas.translate(
+              viewportController.panOffset.dx,
+              viewportController.panOffset.dy,
+            );
             final zoomScale =
                 viewportController.scale * viewportController.zoom;
-            final matrix = Matrix4.identity()
-              ..translate(
-                viewportController.panOffset.dx,
-                viewportController.panOffset.dy,
-              )
-              ..scale(zoomScale, zoomScale);
-            canvas.transform(matrix.storage);
+            canvas.scale(zoomScale, zoomScale);
           },
           context,
         ),
@@ -330,11 +379,8 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     widget.controller.stop();
     widget.controller.disposeTicker();
     _exitHoverTimer?.cancel();
-    if (widget.onSecondaryTappedNode != null) {
-      widget.controller.removeNodeOnSecondaryTapListener(
-        widget.onSecondaryTappedNode!,
-      );
-    }
+    widget.controller.removeNodeOnSecondaryTapListener(_onNodeSecondaryTap);
+    widget.controller.removeOnSecondaryTapListener(_onSecondaryTap);
     if (widget.onSelectionChanged != null) {
       widget.controller.removeOnSelectionChangedListener(
         widget.onSelectionChanged!,
@@ -349,31 +395,56 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
   }
 
   Widget _buildTooltips() {
-    if (_secondaryTapPosition != null && widget.contextMenuBuilder != null) {
-      void dimiss() {
+    if (_secondaryTapPosition != null) {
+      void dismiss() {
         _secondaryTapPosition = null;
+        _secondaryTappedNode = null;
         if (mounted) {
           setState(() {});
         }
       }
 
-      return TooltipPositionedWidget(
-        target: _secondaryTapPosition!,
-        child: TapRegion(
-          onTapOutside: (event) {
-            dimiss();
-          },
-          child: Material(
-            type: MaterialType.transparency,
-            child: widget.contextMenuBuilder!(
-              context,
-              widget.controller,
-              _secondaryTapPosition!,
-              dimiss,
+      if (_secondaryTappedNode != null &&
+          widget.nodeContextMenuBuilder != null) {
+        return TooltipPositionedWidget(
+          target: _secondaryTapPosition!,
+          child: TapRegion(
+            onTapOutside: (event) {
+              dismiss();
+            },
+            child: Material(
+              type: MaterialType.transparency,
+              child: widget.nodeContextMenuBuilder!(
+                context,
+                widget.controller,
+                _secondaryTappedNode!,
+                _secondaryTapPosition!,
+                dismiss,
+              ),
             ),
           ),
-        ),
-      );
+        );
+      }
+
+      if (widget.contextMenuBuilder != null) {
+        return TooltipPositionedWidget(
+          target: _secondaryTapPosition!,
+          child: TapRegion(
+            onTapOutside: (event) {
+              dismiss();
+            },
+            child: Material(
+              type: MaterialType.transparency,
+              child: widget.contextMenuBuilder!(
+                context,
+                widget.controller,
+                _secondaryTapPosition!,
+                dismiss,
+              ),
+            ),
+          ),
+        );
+      }
     }
     final edge = widget.controller.hoveredEdge;
     if (edge != null && widget.edgeTooltipBuilder != null) {

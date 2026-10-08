@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:force_graph/src/controller.dart' show ForceGraphNode;
+import 'package:force_graph/src/controller.dart'
+    show ForceGraphNode, ForceGraphEdge;
 import 'package:forge2d/forge2d.dart';
 
 // returns true if drawing was handled, false otherwise
@@ -15,6 +16,27 @@ typedef NodePainter =
       BuildContext context,
     );
 
+// returns true if drawing was handled, false otherwise
+// if drawing is marked as not handled, the default painter will be used
+// based on the edge style provided
+typedef EdgePainter =
+    bool Function(Canvas canvas, ForceGraphEdge edge, BuildContext context);
+
+/// Controls when node text labels should be rendered on the graph canvas.
+enum NodeLabelVisibility {
+  /// Labels are always rendered for all nodes.
+  always,
+
+  /// Labels are rendered only when the node is hovered or selected.
+  hoveredOrSelected,
+
+  /// Labels are rendered only when the node is selected.
+  selectedOnly,
+
+  /// Labels are never rendered on the canvas.
+  never,
+}
+
 class ForceGraphNodeData {
   final String iD;
   final List<ForceGraphEdgeData> edges;
@@ -23,10 +45,14 @@ class ForceGraphNodeData {
   final Object? data;
   final double radius;
   final bool removable;
+  final bool pinned;
+  final bool? showLabel;
+  final TextStyle? labelStyle;
   final bool? animateBorder;
   final bool? animateBorderOnlyIfSelected;
   final Duration? animateBorderDuration;
   final NodePainter? customPainter;
+
   const ForceGraphNodeData(
     this.iD,
     this.edges,
@@ -38,8 +64,11 @@ class ForceGraphNodeData {
     this.animateBorder,
     this.animateBorderOnlyIfSelected,
     this.animateBorderDuration,
-    this.customPainter,
-  );
+    this.customPainter, {
+    this.pinned = false,
+    this.showLabel,
+    this.labelStyle,
+  });
 
   factory ForceGraphNodeData.from({
     required String id,
@@ -47,8 +76,11 @@ class ForceGraphNodeData {
     GraphComponentStyle style = GraphComponentStyle.none,
     String title = '',
     Object? data,
-    double radius = 0.2,
+    double radius = 18.0,
     bool removable = true,
+    bool pinned = false,
+    bool? showLabel,
+    TextStyle? labelStyle,
     bool? animateBorder,
     bool? animateBorderOnlyIfSelected,
     Duration? animateBorderDuration,
@@ -56,7 +88,7 @@ class ForceGraphNodeData {
   }) {
     return ForceGraphNodeData(
       id,
-      edges,
+      List<ForceGraphEdgeData>.from(edges),
       style,
       title,
       data,
@@ -66,13 +98,16 @@ class ForceGraphNodeData {
       animateBorderOnlyIfSelected,
       animateBorderDuration,
       customPainter,
+      pinned: pinned,
+      showLabel: showLabel,
+      labelStyle: labelStyle,
     );
   }
 
   ForceGraphNodeData deepCopy() {
     return ForceGraphNodeData(
       iD,
-      List.from(edges),
+      edges.map((e) => e.deepCopy()).toList(),
       style,
       title,
       data,
@@ -82,6 +117,9 @@ class ForceGraphNodeData {
       animateBorderOnlyIfSelected,
       animateBorderDuration,
       customPainter,
+      pinned: pinned,
+      showLabel: showLabel,
+      labelStyle: labelStyle,
     );
   }
 
@@ -93,6 +131,9 @@ class ForceGraphNodeData {
     Object? data,
     double? radius,
     bool? removable,
+    bool? pinned,
+    bool? showLabel,
+    TextStyle? labelStyle,
     bool? animateBorder,
     bool? animateBorderOnlyIfSelected,
     Duration? animateBorderDuration,
@@ -109,6 +150,9 @@ class ForceGraphNodeData {
     animateBorderOnlyIfSelected ?? this.animateBorderOnlyIfSelected,
     animateBorderDuration ?? this.animateBorderDuration,
     customPainter ?? this.customPainter,
+    pinned: pinned ?? this.pinned,
+    showLabel: showLabel ?? this.showLabel,
+    labelStyle: labelStyle ?? this.labelStyle,
   );
 
   @override
@@ -120,7 +164,7 @@ class ForceGraphNodeData {
 
   @override
   String toString() {
-    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable, animateBorder: $animateBorder, animateBorderOnlyIfSelected: $animateBorderOnlyIfSelected, animateBorderDuration: $animateBorderDuration, customPainter: $customPainter)';
+    return 'ForceGraphNodeData(id: $iD, edges: $edges, style: $style, title: $title, data: $data, radius: $radius, removable: $removable, pinned: $pinned, showLabel: $showLabel, animateBorder: $animateBorder, animateBorderOnlyIfSelected: $animateBorderOnlyIfSelected, animateBorderDuration: $animateBorderDuration, customPainter: $customPainter)';
   }
 
   void removeEdge(int iD) {
@@ -135,6 +179,11 @@ class ForceGraphEdgeData {
   final double weight;
   final Object? data;
   final GraphComponentStyle style;
+  final bool directed;
+  final String? label;
+  final TextStyle? labelStyle;
+  final EdgePainter? customPainter;
+
   const ForceGraphEdgeData(
     this.source,
     this.target,
@@ -142,6 +191,10 @@ class ForceGraphEdgeData {
     this.weight,
     this.style, [
     this.data,
+    this.directed = false,
+    this.label,
+    this.labelStyle,
+    this.customPainter,
   ]);
 
   factory ForceGraphEdgeData.from({
@@ -151,8 +204,64 @@ class ForceGraphEdgeData {
     Object? data,
     double weight = 1.0,
     GraphComponentStyle style = GraphComponentStyle.none,
+    bool directed = false,
+    String? label,
+    TextStyle? labelStyle,
+    EdgePainter? customPainter,
   }) {
-    return ForceGraphEdgeData(source, target, similarity, weight, style, data);
+    return ForceGraphEdgeData(
+      source,
+      target,
+      similarity,
+      weight,
+      style,
+      data,
+      directed,
+      label,
+      labelStyle,
+      customPainter,
+    );
+  }
+
+  ForceGraphEdgeData deepCopy() {
+    return ForceGraphEdgeData(
+      source,
+      target,
+      similarity,
+      weight,
+      style,
+      data,
+      directed,
+      label,
+      labelStyle,
+      customPainter,
+    );
+  }
+
+  ForceGraphEdgeData copyWith({
+    String? source,
+    String? target,
+    double? similarity,
+    double? weight,
+    Object? data,
+    GraphComponentStyle? style,
+    bool? directed,
+    String? label,
+    TextStyle? labelStyle,
+    EdgePainter? customPainter,
+  }) {
+    return ForceGraphEdgeData(
+      source ?? this.source,
+      target ?? this.target,
+      similarity ?? this.similarity,
+      weight ?? this.weight,
+      style ?? this.style,
+      data ?? this.data,
+      directed ?? this.directed,
+      label ?? this.label,
+      labelStyle ?? this.labelStyle,
+      customPainter ?? this.customPainter,
+    );
   }
 
   static int getID(String source, String target) =>
@@ -169,7 +278,7 @@ class ForceGraphEdgeData {
 
   @override
   String toString() {
-    return 'ForceGraphEdgeData(source: $source, target: $target, similarity: $similarity, weight: $weight, style: $style, data: $data)';
+    return 'ForceGraphEdgeData(source: $source, target: $target, similarity: $similarity, weight: $weight, style: $style, data: $data, directed: $directed, label: $label)';
   }
 }
 

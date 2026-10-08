@@ -49,7 +49,7 @@ class ForceGraphController extends ChangeNotifier {
 
   final bool removeNodeCascade;
 
-  double _nodeLinearDamping = 2.5;
+  double _nodeLinearDamping = 3.5;
 
   double get nodeLinearDamping => _nodeLinearDamping;
 
@@ -62,13 +62,15 @@ class ForceGraphController extends ChangeNotifier {
     }
   }
 
+  NodeLabelVisibility nodeLabelVisibility;
+
   ForceGraphController({
     bool graphBuilderDebugLogs = kDebugMode,
     this.enableSelection = true,
     this.animateBorders = false,
     this.animateBorderOnlyIfSelected = false,
     this.animateBordersDuration = const Duration(milliseconds: 5000),
-    double nodeLinearDamping = 2.5,
+    double nodeLinearDamping = 3.5,
     this.nodeDragMaxForce,
     this.staticNodes = false,
     this.nodeDragDamping = 1,
@@ -82,17 +84,20 @@ class ForceGraphController extends ChangeNotifier {
     this.uniformEdgeWeight = false,
     ForceDirectedGraphBuilder? graphBuilder,
     this.enableAutoCenterOnNodeSelection = true,
+    Color? edgeHighlightColor,
     this.edgeHightlightColor,
     this.edgeHiddenOpacity,
     this.nodeHiddenOpacity,
     this.disableHoverOnHiddenComponents = true,
+    this.nodeLabelVisibility = NodeLabelVisibility.hoveredOrSelected,
     this.hoverEnterDebounceDuration = const Duration(milliseconds: 10),
     this.hoverExitDebounceDuration = const Duration(milliseconds: 200),
     double scale = 10,
     double minZoom = 0.1,
     double maxZoom = 2,
     double? initialZoom,
-  }) : viewportController = ViewportController(
+  }) : _edgeHighlightColor = edgeHighlightColor ?? edgeHightlightColor,
+       viewportController = ViewportController(
          zoom: initialZoom,
          scale: scale,
          minZoom: minZoom,
@@ -132,20 +137,29 @@ class ForceGraphController extends ChangeNotifier {
       maxY = max(maxY, pos.dy);
     }
 
-    final rect = Rect.fromLTRB(minX, minY, maxX, maxY);
+    if (minX.isFinite && minY.isFinite && maxX.isFinite && maxY.isFinite) {
+      final rect = Rect.fromLTRB(minX, minY, maxX, maxY);
+      final shift = viewportController.screenCenter - rect.center;
+      viewportController.setPan(shift);
 
-    final shift = viewportController.screenCenter - rect.center;
+      if (adjustZoom && (rect.width > 0 || rect.height > 0)) {
+        final currentCanvasSize = viewportController.screenSize * 0.85;
 
-    viewportController.setPan(shift);
-
-    if (adjustZoom) {
-      final currentCanvasSize = viewportController.screenSize * 0.9;
-
-      final m = min(
-        currentCanvasSize.width / rect.width,
-        currentCanvasSize.height / rect.height,
-      );
-      viewportController.multiplyZoom(m, animationDuration: Duration.zero);
+        final double m;
+        if (rect.width > 0 && rect.height > 0) {
+          m = min(
+            currentCanvasSize.width / rect.width,
+            currentCanvasSize.height / rect.height,
+          );
+        } else if (rect.width > 0) {
+          m = currentCanvasSize.width / rect.width;
+        } else {
+          m = currentCanvasSize.height / rect.height;
+        }
+        if (m.isFinite && m > 0) {
+          viewportController.multiplyZoom(m, animationDuration: Duration.zero);
+        }
+      }
     }
   }
 
@@ -233,6 +247,7 @@ class ForceGraphController extends ChangeNotifier {
       if (_graphBuilder.ensureReady(dt, this)) {
         _isReady = true;
         _isReadyCallback();
+        notifyListeners();
       }
     } else {
       notifyListeners();
@@ -384,7 +399,7 @@ class ForceGraphController extends ChangeNotifier {
       for (final node in connectedNodes) {
         if (node.body.joints.isEmpty) {
           if (removeNodeCascade) {
-            removeNode(node.iD);
+            removedNodeIDs.addAll(removeNode(node.iD));
           } else {
             final oldEdge = edges[ForceGraphEdgeData.getID(nodeID, node.iD)]!;
             final closestNode = _getClosestNode(node, connectableNodes);
@@ -467,7 +482,7 @@ class ForceGraphController extends ChangeNotifier {
         }
         if (!_graphBuilder.hasMinDistance) {
           final nodeBiggestRadius = _getNodeBiggestRadius(data);
-          _graphBuilder.minDistance = nodeBiggestRadius * 2.5;
+          _graphBuilder.minDistance = max(85.0, nodeBiggestRadius * 3.5);
         }
         _isReady = false;
         _isLoading = true;
@@ -510,13 +525,26 @@ class ForceGraphController extends ChangeNotifier {
     return _init();
   }
 
-  ForceGraphNode? findBodyAt(Vector2? worldPoint) {
+  ForceGraphNode? findBodyAt(Vector2? worldPoint, {double? touchTolerance}) {
     if (worldPoint == null) return null;
+    ForceGraphNode? bestNode;
+    double bestDist = double.maxFinite;
+    final zoomScale = viewportController.scale * viewportController.zoom;
+    final tolerance =
+        touchTolerance ?? (zoomScale > 0 ? (12.0 / zoomScale) : 4.0);
+
     for (final node in _nodes.values) {
       final fixture = node.body.fixtures.firstOrNull;
-      if (fixture != null && fixture.testPoint(worldPoint)) return node;
+      if (fixture != null && fixture.testPoint(worldPoint)) {
+        return node;
+      }
+      final dist = (node.position - worldPoint).length;
+      if (dist <= node.radius + tolerance && dist < bestDist) {
+        bestDist = dist;
+        bestNode = node;
+      }
     }
-    return null;
+    return bestNode;
   }
 
   ForceGraphEdge? findJointAt(Vector2? mouseWorldPosition) {
@@ -581,32 +609,32 @@ class ForceGraphController extends ChangeNotifier {
   final __onSecondaryTaps = <void Function(Offset)>[];
 
   void _onHover(ForceGraphNode? node, bool programatical) {
-    for (final f in __onHovereds) {
+    for (final f in List.of(__onHovereds)) {
       f(node, programatical);
     }
   }
 
   void _onTap(ForceGraphNode node) {
-    for (final f in __onTaps) {
+    for (final f in List.of(__onTaps)) {
       f(node);
     }
   }
 
   void _onNodeSecondaryTap(ForceGraphNode node, Offset screenPos) {
-    for (final f in __onNodeSecondaryTaps) {
+    for (final f in List.of(__onNodeSecondaryTaps)) {
       f(node, screenPos);
     }
   }
 
   void _onSecondaryTap(Offset screenPos) {
-    for (final f in __onSecondaryTaps) {
+    for (final f in List.of(__onSecondaryTaps)) {
       f(screenPos);
     }
   }
 
   void _onSelectionChanged() {
     final s = _nodes.values.where((node) => node.selected).toList();
-    for (final f in __onSelectionChangeds) {
+    for (final f in List.of(__onSelectionChangeds)) {
       f(s);
     }
   }
@@ -630,7 +658,7 @@ class ForceGraphController extends ChangeNotifier {
         }
       }
       for (final highlightId in toHighlight) {
-        _nodes[highlightId]!._opacity = 1;
+        _nodes[highlightId]?._opacity = 1;
       }
     } else {
       // no selection, all to 1
@@ -700,7 +728,7 @@ class ForceGraphController extends ChangeNotifier {
   /// This will remove all the bodies from the world, clear the node and joint
   /// maps, and reset the selected node ids and the on hover and on selection
   /// changed listeners.
-  void clear() {
+  void clear({bool notify = true}) {
     _hoverDebounceTimer?.cancel();
     _isHovering = false;
     for (final node in _nodes.values) {
@@ -711,8 +739,10 @@ class ForceGraphController extends ChangeNotifier {
     _selectedNodeIds.clear();
     _joints.clear();
     _nodes.clear();
-    _onHover(null, true);
-    _onSelectionChanged();
+    if (notify) {
+      _onHover(null, true);
+      _onSelectionChanged();
+    }
   }
 
   @override
@@ -721,8 +751,13 @@ class ForceGraphController extends ChangeNotifier {
     _scheduleAutoMove?.cancel();
     _hoverDebounceTimer?.cancel();
     _graphBuilder.stop();
+    clear(notify: false);
+    __onTaps.clear();
+    __onSelectionChangeds.clear();
+    __onHovereds.clear();
+    __onNodeSecondaryTaps.clear();
+    __onSecondaryTaps.clear();
     super.dispose();
-    clear();
   }
 
   Completer<void>? _completer;
@@ -730,7 +765,12 @@ class ForceGraphController extends ChangeNotifier {
   Future<void> loadDataFrom(
     List<ForceGraphNodeData> nodes, {
     bool notifyReadyStatusChange = true,
+    ForceDirectedGraphBuilder? graphBuilder,
   }) {
+    if (graphBuilder != null && _graphBuilder != graphBuilder) {
+      _graphBuilder.stop();
+      _graphBuilder = graphBuilder;
+    }
     _rawData.clear();
     _rawData.addAll(nodes);
     _completer = Completer();
@@ -740,13 +780,133 @@ class ForceGraphController extends ChangeNotifier {
     return _completer!.future.whenComplete(() => _completer = null);
   }
 
-  final ForceDirectedGraphBuilder _graphBuilder;
+  ForceDirectedGraphBuilder _graphBuilder;
+
+  ForceDirectedGraphBuilder get graphBuilder => _graphBuilder;
+
+  set graphBuilder(ForceDirectedGraphBuilder value) {
+    if (_graphBuilder != value) {
+      _graphBuilder.stop();
+      _graphBuilder = value;
+      reload();
+    }
+  }
 
   double? nodeHiddenOpacity;
 
   double? edgeHiddenOpacity;
 
+  Color? _edgeHighlightColor;
+
+  Color? get edgeHighlightColor => _edgeHighlightColor ?? edgeHightlightColor;
+
+  set edgeHighlightColor(Color? value) {
+    _edgeHighlightColor = value;
+    edgeHightlightColor = value;
+    notifyListeners();
+  }
+
   Color? edgeHightlightColor;
+
+  /// Dynamically add a node to the graph at runtime.
+  ForceGraphNode addNode(
+    ForceGraphNodeData nodeData, {
+    Vector2? position,
+    bool select = false,
+  }) {
+    if (_nodes.containsKey(nodeData.iD)) {
+      throw ArgumentError('Node with ID "${nodeData.iD}" already exists.');
+    }
+    _rawData.add(nodeData);
+    final pos =
+        position ??
+        (viewportController.hasSize
+            ? viewportController.screenToWorld(viewportController.screenCenter)
+            : Vector2.zero());
+
+    final node = ForceGraphNode._fromForceGraphNodeData(
+      nodeData,
+      this,
+      position: pos,
+      linearDamping: nodeLinearDamping,
+      enableNodesAutoMove: enableNodesAutoMove,
+    );
+    _nodes[nodeData.iD] = node;
+
+    for (final edgeData in nodeData.edges) {
+      if (_nodes.containsKey(edgeData.target)) {
+        try {
+          addEdge(edgeData);
+        } catch (_) {}
+      }
+    }
+
+    if (select) {
+      selectNode(node.iD);
+    }
+    notifyListeners();
+    return node;
+  }
+
+  /// Dynamically add an edge between two existing nodes.
+  ForceGraphEdge? addEdge(ForceGraphEdgeData edgeData) {
+    if (edgeData.source == edgeData.target) return null;
+    final nodeA = _nodes[edgeData.source];
+    final nodeB = _nodes[edgeData.target];
+    if (nodeA == null || nodeB == null) return null;
+
+    final edgeID = edgeData.iD;
+    if (_joints.containsKey(edgeID)) return _joints[edgeID];
+
+    final jointDef = DistanceJointDef()
+      ..initialize(nodeA.body, nodeB.body, nodeA.position, nodeB.position)
+      ..frequencyHz = jointFrequency
+      ..dampingRatio = jointDamping;
+    jointDef.userData = edgeData;
+
+    final joint = DistanceJoint(jointDef);
+    final edge = ForceGraphEdge(joint, edgeData, this);
+    _joints[edgeID] = edge;
+    world.createJoint(joint);
+
+    if (!nodeA.data.edges.any((e) => e.iD == edgeID)) {
+      nodeA.data.edges.add(edgeData);
+    }
+    notifyListeners();
+    return edge;
+  }
+
+  /// Searches nodes matching the [query] string by id or title.
+  List<ForceGraphNode> searchNodes(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    return _nodes.values.where((node) {
+      if (node.iD.toLowerCase().contains(q)) return true;
+      if (node.data.title.toLowerCase().contains(q)) return true;
+      final dataStr = node.data.data?.toString().toLowerCase();
+      if (dataStr != null && dataStr.contains(q)) return true;
+      return false;
+    }).toList();
+  }
+
+  /// Highlights specified nodes and dims all other nodes.
+  void highlightNodes(Iterable<String> nodeIDs) {
+    final ids = nodeIDs.toSet();
+    if (ids.isEmpty) {
+      resetHighlights();
+      return;
+    }
+    for (final node in _nodes.values) {
+      node._opacity = ids.contains(node.iD) ? 1.0 : (nodeHiddenOpacity ?? 0.2);
+    }
+    notifyListeners();
+  }
+
+  /// Resets opacity of all nodes to normal or selection highlights.
+  void resetHighlights() {
+    _recalculateHighlights();
+    notifyListeners();
+  }
 
   List<ForceGraphNode> get selectedNodes {
     return [for (final id in _selectedNodeIds) _nodes[id]!];
@@ -912,22 +1072,36 @@ class ForceGraphController extends ChangeNotifier {
     _selectionEnd = null;
   }
 
+  bool _draggedBodyWasStatic = false;
+
   void startDragging(Body body, Vector2 targetWorld) {
     stopDragging();
+    _isDraggingNode = true;
+    _draggedBodyWasStatic = body.bodyType == BodyType.static;
+    if (_draggedBodyWasStatic) {
+      body.setType(BodyType.dynamic);
+    }
     final mouseJointDef = MouseJointDef()
       ..bodyA = ground
       ..bodyB = body
       ..target.setFrom(targetWorld)
-      ..maxForce = nodeDragMaxForce ?? (body.mass * 60)
-      ..dampingRatio = nodeDragDamping;
+      ..frequencyHz = 25.0
+      ..dampingRatio = nodeDragDamping
+      ..maxForce = nodeDragMaxForce ?? max(5000.0, body.mass * 50000.0);
     _mouseJoint = MouseJoint(mouseJointDef);
     world.createJoint(_mouseJoint!);
   }
 
   void stopDragging() {
+    _isDraggingNode = false;
     if (_mouseJoint != null) {
+      final body = _mouseJoint!.bodyB;
       world.destroyJoint(_mouseJoint!);
       _mouseJoint = null;
+      if (_draggedBodyWasStatic) {
+        body.setType(BodyType.static);
+        _draggedBodyWasStatic = false;
+      }
     }
   }
 
@@ -1205,7 +1379,17 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
 
     final scale = details.scale;
 
-    if (scale != 1.0) {
+    if (_mouseJoint != null) {
+      _isDraggingNode = true;
+      final worldTarget = viewportController.screenToWorld(
+        details.localFocalPoint,
+      );
+      _mouseJoint?.setTarget(worldTarget);
+    } else if (isPanning) {
+      _isDraggingNode = false;
+      stopSelecting();
+      viewportController.addPan(details.focalPointDelta);
+    } else if (scale != 1.0) {
       double dt = scale - 1;
       if (dt.isNegative) {
         dt /= 20;
@@ -1218,23 +1402,13 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
         focalPoint: details.localFocalPoint,
         animationDuration: Duration.zero,
       );
-    } else if (isPanning) {
-      _isDraggingNode = false;
-      stopSelecting();
-      viewportController.addPan(details.focalPointDelta);
-    } else if (_mouseJoint != null) {
-      _isDraggingNode = true;
-      final worldTarget = viewportController.screenToWorld(
-        details.localFocalPoint,
-      );
-      _mouseJoint?.setTarget(worldTarget);
     }
   }
 
   void onScaleEnd(ScaleEndDetails details) {
     _scheduleAutoMove?.cancel();
 
-    if (isDraggingNode) {
+    if (_mouseJoint != null || isDraggingNode) {
       stopDragging();
     }
     if (isSelecting) {
@@ -1519,20 +1693,19 @@ class ForceGraphEdge {
   ForceGraphEdge(this.joint, this.data, this._controller);
 
   void draw(Canvas canvas, BuildContext context) {
-    final style = data.style.fromContext(context);
+    if (data.customPainter != null &&
+        data.customPainter!(canvas, this, context)) {
+      return;
+    }
 
+    final style = data.style.fromContext(context);
     final p1 = joint.bodyA.position.toOffset();
     final p2 = joint.bodyB.position.toOffset();
     final paint = Paint();
     if (style.color != null) {
       paint.color = style.color!;
     }
-    double weight = 0.5;
-    if (!_controller.uniformEdgeWeight) {
-      weight = data.weight;
-    }
-
-    weight /= _controller.viewportController.scale / 2;
+    double pixelWeight = _controller.uniformEdgeWeight ? 1.8 : data.weight;
 
     if (hidden) {
       paint.color = paint.color.withValues(
@@ -1540,16 +1713,102 @@ class ForceGraphEdge {
       );
     } else {
       if (highlight) {
-        paint.color = _controller.edgeHightlightColor ?? Colors.purpleAccent;
-        weight *= 1.4;
+        paint.color =
+            style.selectedColor ??
+            _controller.edgeHighlightColor ??
+            Colors.purpleAccent;
+        pixelWeight *= 1.6;
       } else if (hovered) {
-        paint.color = Colors.red;
-        weight *= 1.4;
+        paint.color = style.hoverColor ?? Colors.red;
+        pixelWeight *= 1.6;
       }
     }
 
-    paint.strokeWidth = weight;
+    final zoomScale = _controller.viewportController.scale *
+        _controller.viewportController.zoom;
+    final double strokeWidthWorld = (zoomScale > 0)
+        ? (max(1.0, pixelWeight) / zoomScale)
+        : pixelWeight;
+
+    paint.strokeWidth = strokeWidthWorld;
     canvas.drawLine(p1, p2, paint);
+
+    // Draw directed arrow if enabled
+    if (data.directed) {
+      final delta = p2 - p1;
+      final dist = delta.distance;
+      if (dist > 0.01) {
+        final dir = delta / dist;
+        final normal = Offset(-dir.dy, dir.dx);
+        final targetNode = _controller.getNodeOrNull(data.target);
+        final targetRadius = targetNode?.data.radius ?? 18.0;
+
+        final effectiveZoom = zoomScale > 0 ? zoomScale : 1.0;
+        final arrowLength = (11.0 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
+        final arrowWidth = (6.5 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
+        final tip = p2 - dir * (targetRadius + 2.0 / effectiveZoom);
+        final base = tip - dir * arrowLength;
+        final left = base + normal * arrowWidth;
+        final right = base - normal * arrowWidth;
+
+        final arrowPath = Path()
+          ..moveTo(tip.dx, tip.dy)
+          ..lineTo(left.dx, left.dy)
+          ..lineTo(right.dx, right.dy)
+          ..close();
+
+        final arrowPaint = Paint()
+          ..color = paint.color
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(arrowPath, arrowPaint);
+      }
+    }
+
+    // Draw edge label if provided
+    if (data.label != null && data.label!.isNotEmpty && !hidden) {
+      final mid = (p1 + p2) / 2;
+      final zoomScale =
+          _controller.viewportController.scale *
+          _controller.viewportController.zoom;
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+
+      final labelStyle =
+          data.labelStyle ??
+          TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white70 : Colors.black87,
+          );
+
+      final tp = TextPainter(
+        text: TextSpan(text: data.label, style: labelStyle),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      canvas.save();
+      canvas.translate(mid.dx, mid.dy);
+      canvas.scale(1.0 / zoomScale, 1.0 / zoomScale);
+
+      final bgRect = Rect.fromCenter(
+        center: Offset.zero,
+        width: tp.width + 6,
+        height: tp.height + 2,
+      );
+      final bgPaint = Paint()
+        ..color = (isDark ? Colors.black87 : Colors.white).withValues(
+          alpha: 0.85,
+        )
+        ..style = PaintingStyle.fill;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(bgRect, const Radius.circular(3)),
+        bgPaint,
+      );
+
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      canvas.restore();
+    }
   }
 }
 
@@ -1560,13 +1819,25 @@ class ForceGraphNode {
 
   ForceGraphNodeData get data => body.userData as ForceGraphNodeData;
 
+  double get radius => data.radius;
+
   set position(Vector2 pos) => body.setTransform(pos, body.angle);
 
   String get iD => data.iD;
 
   ForceGraphNode(this.body, this._controller, this.enableAutoMove);
 
-  static final _mass = MassData()..mass = 1;
+  static final _mass = MassData()..mass = 0.15;
+
+  bool get isPinned => body.bodyType == BodyType.static;
+
+  void setPinned(bool pinned) {
+    body.setType(pinned ? BodyType.static : BodyType.dynamic);
+  }
+
+  void togglePinned() {
+    setPinned(!isPinned);
+  }
 
   static ForceGraphNode _fromForceGraphNodeData(
     ForceGraphNodeData node,
@@ -1579,8 +1850,9 @@ class ForceGraphNode {
       throw 'Invalid position for node ${node.iD}: $position';
     }
     final world = controller.world;
+    final isStatic = controller.staticNodes || node.pinned;
     final nodeDef = BodyDef(
-      type: controller.staticNodes ? BodyType.static : BodyType.dynamic,
+      type: isStatic ? BodyType.static : BodyType.dynamic,
       position: position,
     );
 
@@ -1588,7 +1860,7 @@ class ForceGraphNode {
 
     final body = world.createBody(nodeDef);
 
-    body.createFixtureFromShape(CircleShape(radius: node.radius * 2));
+    body.createFixtureFromShape(CircleShape(radius: node.radius));
 
     // body.setMassData(MassData()..mass = .1 * node.edges.length);
     body.setMassData(_mass);
@@ -1684,7 +1956,6 @@ class ForceGraphNode {
     return (paint, radius);
   }
 
-  @protected
   void draw(Canvas canvas, BuildContext context) {
     final pos = position.toOffset();
 
@@ -1706,20 +1977,28 @@ class ForceGraphNode {
         }
       }
       if (borderWidth > 0) {
+        final zoomScale = _controller.viewportController.scale *
+            _controller.viewportController.zoom;
+        final double strokeWidthWorld;
         if (style.borderWidthRatio) {
-          borderWidth *= radius;
+          strokeWidthWorld = borderWidth * radius;
         } else {
-          borderWidth /= 2;
+          // borderWidth is in screen pixels (e.g. 2.0 or 3.0), convert to world coords
+          strokeWidthWorld = (zoomScale > 0) ? (borderWidth / zoomScale) : borderWidth;
         }
+        // Cap strokeWidthWorld so it never dominates the node itself (max 25% of radius)
+        final effectiveStrokeWidth = min(strokeWidthWorld, radius * 0.25);
+
         final animateBorder = data.animateBorder ?? _controller.animateBorders;
         final animateBorderOnlyIfSelected =
             data.animateBorderOnlyIfSelected ??
             _controller.animateBorderOnlyIfSelected;
-        final newPaint = Paint.from(paint);
-        newPaint.style = PaintingStyle.stroke;
-        newPaint.color = borderColor ?? Colors.transparent;
+        final newPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = effectiveStrokeWidth
+          ..color = borderColor ?? Colors.transparent;
 
-        double strokeRadius = radius + borderWidth;
+        double strokeRadius = radius + effectiveStrokeWidth / 2;
 
         if (animateBorder && (!animateBorderOnlyIfSelected || selected)) {
           final duration =
@@ -1731,9 +2010,8 @@ class ForceGraphNode {
             r = 2 - r;
           }
 
-          strokeRadius = radius + borderWidth * (r * 0.7 + 0.3);
+          strokeRadius = radius + (effectiveStrokeWidth / 2) + effectiveStrokeWidth * (r * 0.6 + 0.2);
         }
-        newPaint.strokeWidth = (strokeRadius - radius) * 2;
 
         if (_opacity != 1) {
           newPaint.color = newPaint.color.withValues(
@@ -1745,7 +2023,106 @@ class ForceGraphNode {
       }
 
       canvas.drawCircle(pos, radius, paint);
+
+      // Draw subtle pin indicator if node is pinned
+      if (isPinned) {
+        final pinPaint = Paint()
+          ..color = Colors.amber
+          ..style = PaintingStyle.fill;
+        final pinBorder = Paint()
+          ..color = Colors.black87
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.5;
+        final pinCenter = Offset(pos.dx + radius * 0.7, pos.dy - radius * 0.7);
+        final pinRadius = max(3.0, radius * 0.25);
+        canvas.drawCircle(pinCenter, pinRadius, pinPaint);
+        canvas.drawCircle(pinCenter, pinRadius, pinBorder);
+      }
+
+      // Draw node text label if enabled
+      final shouldDrawLabel =
+          data.showLabel ??
+          switch (_controller.nodeLabelVisibility) {
+            NodeLabelVisibility.always => true,
+            NodeLabelVisibility.hoveredOrSelected => hovered || selected,
+            NodeLabelVisibility.selectedOnly => selected,
+            NodeLabelVisibility.never => false,
+          };
+
+      if (shouldDrawLabel && data.title.isNotEmpty) {
+        _drawLabel(canvas, context, pos, radius);
+      }
     }
+  }
+
+  void _drawLabel(
+    Canvas canvas,
+    BuildContext context,
+    Offset pos,
+    double radius,
+  ) {
+    final title = data.title;
+    if (title.isEmpty) return;
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final zoomScale =
+        _controller.viewportController.scale *
+        _controller.viewportController.zoom;
+
+    final defaultTextColor =
+        isDark ? Colors.white : const Color(0xFF1E293B);
+    final effectiveStyle =
+        (data.labelStyle ??
+            TextStyle(
+              fontSize: 10.5,
+              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              color: defaultTextColor,
+            )).copyWith(
+          color: (data.labelStyle?.color ?? defaultTextColor).withValues(
+            alpha:
+                (data.labelStyle?.color?.a ?? defaultTextColor.a) * _opacity,
+          ),
+        );
+
+    final span = TextSpan(text: title, style: effectiveStyle);
+    final tp = TextPainter(
+      text: span,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    canvas.save();
+    canvas.translate(pos.dx, pos.dy + radius + (3.0 / zoomScale));
+    canvas.scale(1.0 / zoomScale, 1.0 / zoomScale);
+
+    final bgRect = Rect.fromCenter(
+      center: Offset(0, tp.height / 2),
+      width: tp.width + 10,
+      height: tp.height + 4,
+    );
+
+    final bgPaint = Paint()
+      ..color = (isDark ? Colors.black87 : Colors.white).withValues(
+        alpha: (selected ? 0.95 : 0.8) * _opacity,
+      )
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color =
+          (selected
+                  ? (theme.colorScheme.primary)
+                  : (isDark ? Colors.white24 : Colors.black12))
+              .withValues(alpha: _opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = selected ? 1.5 : 0.8;
+
+    final rrect = RRect.fromRectAndRadius(bgRect, const Radius.circular(4));
+    canvas.drawRRect(rrect, bgPaint);
+    canvas.drawRRect(rrect, borderPaint);
+
+    tp.paint(canvas, Offset(-tp.width / 2, 0));
+    canvas.restore();
   }
 
   @override
@@ -1861,12 +2238,17 @@ class _DestroyListener implements DestroyListener {
 
   @override
   void onDestroyJoint(Joint joint) {
-    final bodyAID = (joint.bodyA.userData as ForceGraphNodeData).iD;
-    final bodyBID = (joint.bodyB.userData as ForceGraphNodeData).iD;
-    final iD = ForceGraphEdgeData.getID(bodyAID, bodyBID);
-    controller._joints.remove(iD);
-    controller._nodes[bodyAID]?.data.removeEdge(iD);
-    controller._nodes[bodyBID]?.data.removeEdge(iD);
+    final bodyAUserData = joint.bodyA.userData;
+    final bodyBUserData = joint.bodyB.userData;
+    if (bodyAUserData is ForceGraphNodeData &&
+        bodyBUserData is ForceGraphNodeData) {
+      final bodyAID = bodyAUserData.iD;
+      final bodyBID = bodyBUserData.iD;
+      final iD = ForceGraphEdgeData.getID(bodyAID, bodyBID);
+      controller._joints.remove(iD);
+      controller._nodes[bodyAID]?.data.removeEdge(iD);
+      controller._nodes[bodyBID]?.data.removeEdge(iD);
+    }
   }
 }
 

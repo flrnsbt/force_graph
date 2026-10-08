@@ -37,8 +37,8 @@ void performDistanceLayoutIsolate(dynamic input) {
       final positions = <String, Point<double>>{};
       final edges = <ForceGraphEdgeDataMap>[];
       final rawNodes = unwrappedInput['nodes'];
-      final minDistance = unwrappedInput['minDistance'] as double;
-      final tolerance = unwrappedInput['tolerance'] as double;
+      final minDistance = (unwrappedInput['minDistance'] as num).toDouble();
+      final tolerance = (unwrappedInput['tolerance'] as num).toDouble();
       final preserved =
           unwrappedInput['positionsToPreserve'] as Map<String, dynamic>?;
 
@@ -171,6 +171,19 @@ void performDistanceLayoutIsolate(dynamic input) {
             }
 
             i++;
+          }
+        }
+      }
+
+      // Ensure all nodes have assigned positions even if disconnected
+      if (rawNodes is Iterable) {
+        final rand = Random(42);
+        for (final n in rawNodes) {
+          final id = n['id'] as String;
+          if (!positions.containsKey(id)) {
+            final angle = rand.nextDouble() * 2 * pi;
+            final dist = minDistance * (2.0 + rand.nextDouble() * 3.0);
+            positions[id] = Point(dist * cos(angle), dist * sin(angle));
           }
         }
       }

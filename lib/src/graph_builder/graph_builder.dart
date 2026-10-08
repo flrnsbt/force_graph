@@ -10,7 +10,6 @@ import 'package:isolate_manager/isolate_manager.dart';
 
 import 'package:flutter/material.dart';
 import 'package:force_graph/force_graph.dart';
-import 'package:forge2d/forge2d.dart';
 
 class DistanceGraphBuilder extends ForceDirectedGraphBuilder {
   late double _tolerance;
@@ -299,6 +298,67 @@ final double verticalVariation =
   }
 }
 
+/// Arranges nodes in a circle or concentric circles.
+class CircularGraphBuilder extends ForceDirectedGraphBuilder {
+  /// Radius of the circle in screen coordinates. If null, computed from canvas size.
+  final double? radius;
+
+  CircularGraphBuilder({
+    this.radius,
+    super.debugLogs,
+    super.minDistance,
+    super.maxDistance,
+  });
+
+  @override
+  Future<void> $_performLayout(
+    Iterable<ForceGraphNodeDataMap> nodes,
+    Size size, [
+    ValueChanged<int>? progressCallback,
+    Map<String, Point<double>>? positionsToPreserve,
+  ]) async {
+    final nodeList = nodes.toList();
+    final totalNodes = nodeList.length;
+    if (totalNodes == 0) return;
+
+    final center = Point<double>(size.width / 2, size.height / 2);
+    final baseRadius = radius ?? (min(size.width, size.height) * 0.35);
+
+    _positions.clear();
+
+    if (totalNodes <= 24) {
+      for (int i = 0; i < totalNodes; i++) {
+        final angle = (2 * pi * i) / totalNodes - (pi / 2);
+        final x = center.x + baseRadius * cos(angle);
+        final y = center.y + baseRadius * sin(angle);
+        _positions[nodeList[i]['id'] as String] = Point(x, y);
+        progressCallback?.call(((i + 1) / totalNodes * 100).round());
+      }
+    } else {
+      final innerCount = (totalNodes * 0.35).round();
+      final outerCount = totalNodes - innerCount;
+      final innerRadius = baseRadius * 0.55;
+      final outerRadius = baseRadius;
+
+      for (int i = 0; i < innerCount; i++) {
+        final angle = (2 * pi * i) / innerCount - (pi / 2);
+        final x = center.x + innerRadius * cos(angle);
+        final y = center.y + innerRadius * sin(angle);
+        _positions[nodeList[i]['id'] as String] = Point(x, y);
+      }
+
+      for (int i = 0; i < outerCount; i++) {
+        final angle = (2 * pi * i) / outerCount - (pi / 2);
+        final x = center.x + outerRadius * cos(angle);
+        final y = center.y + outerRadius * sin(angle);
+        _positions[nodeList[innerCount + i]['id'] as String] = Point(x, y);
+      }
+    }
+
+    progressCallback?.call(100);
+  }
+}
+
 Map<String, Map<String, double>> _jsonifyPoints(
   Map<String, Point<double>> points,
 ) {
@@ -338,12 +398,14 @@ abstract class ForceDirectedGraphBuilder {
     assert(value > 0);
     assert(_maxDistance == null || value < _maxDistance!);
     _minDistance = value;
+    _hasExplicitMinDistance = true;
     parametersChanged();
   }
 
   set maxDistance(double value) {
     assert(_minDistance == null || value > _minDistance!);
     _maxDistance = value;
+    _hasExplicitMaxDistance = true;
     parametersChanged();
   }
 
@@ -359,11 +421,15 @@ abstract class ForceDirectedGraphBuilder {
     _parametersChanged = true;
   }
 
+  bool _hasExplicitMinDistance;
+  bool _hasExplicitMaxDistance;
+
   ForceDirectedGraphBuilder({
     this.debugLogs = false,
     double? minDistance,
     double? maxDistance,
-  }) {
+  })  : _hasExplicitMinDistance = minDistance != null,
+        _hasExplicitMaxDistance = maxDistance != null {
     if (minDistance != null) {
       this.minDistance = minDistance;
     }
@@ -399,9 +465,9 @@ abstract class ForceDirectedGraphBuilder {
     double width,
     double height,
   ) {
-    double baseDistance = minDistance * (1 + 0.5 * sqrt(nodeCount));
-    double maxAllowed = min(width, height) * 0.3;
-    return min(baseDistance, maxAllowed);
+    double baseDistance = minDistance * (1 + 0.5 * sqrt(max(1, nodeCount)));
+    double maxAllowed = min(width, height) * 0.45;
+    return max(minDistance * 2.0, min(baseDistance, maxAllowed));
   }
 
   Future<void> performLayout(
@@ -412,6 +478,13 @@ abstract class ForceDirectedGraphBuilder {
     try {
       _clear();
       _nodes.addAll(nodes);
+      if (_minDistance == null) {
+        double maxRadius = 16.0;
+        for (final n in nodes) {
+          if (n.radius > maxRadius) maxRadius = n.radius;
+        }
+        _minDistance = max(85.0, maxRadius * 3.5);
+      }
       _maxDistance ??= _calculateMaxDistance(
         minDistance,
         nodes.length,
@@ -459,14 +532,32 @@ abstract class ForceDirectedGraphBuilder {
     _positions.clear();
     edges.clear();
     _nodes.clear();
+    if (!_hasExplicitMinDistance) {
+      _minDistance = null;
+    }
+    if (!_hasExplicitMaxDistance) {
+      _maxDistance = null;
+    }
   }
 
   Map<ForceGraphNodeData, Vector2> getNodes() {
     final result = <ForceGraphNodeData, Vector2>{};
+    final rand = Random(42);
+    final fallbackCenter = Point<double>(
+      (_size?.width ?? 600) / 2,
+      (_size?.height ?? 600) / 2,
+    );
     for (final node in _nodes) {
-      final position = _positions[node.iD];
+      var position = _positions[node.iD];
       if (position == null) {
-        throw Exception('No position found for node ${node.iD}');
+        final angle = rand.nextDouble() * 2 * pi;
+        final r = (hasMinDistance ? minDistance : 1.0) *
+            (2.0 + rand.nextDouble() * 2.0);
+        position = Point(
+          fallbackCenter.x + r * cos(angle),
+          fallbackCenter.y + r * sin(angle),
+        );
+        _positions[node.iD] = position;
       }
       result[node] = position.toVector2();
     }

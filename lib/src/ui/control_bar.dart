@@ -164,7 +164,7 @@ class _ControlBarState extends State<ControlBar> {
                     tooltip: 'Click mode',
 
                     icon: const Icon(Icons.ads_click_rounded),
-                    color: panningMode ? foregroundColor : theme.primaryColor,
+                    color: panningMode ? foregroundColor : theme.colorScheme.onSurfaceVariant,
                     onPressed: () {
                       widget.controller.setClickingMode();
                     },
@@ -175,7 +175,7 @@ class _ControlBarState extends State<ControlBar> {
                     tooltip: 'Pan mode',
                     icon: const Icon(Icons.pan_tool),
 
-                    color: panningMode ? theme.primaryColor : foregroundColor,
+                    color: panningMode ? theme.colorScheme.onSurfaceVariant : foregroundColor,
                     onPressed: () {
                       widget.controller.setPanningMode();
                     },
