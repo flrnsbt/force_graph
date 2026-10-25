@@ -76,6 +76,10 @@ ForceGraphWidget(
 
 See the [`example`](example/README.md) directory for a full Flutter app using this package.
 
+## Live Demo
+
+Try the interactive demo at [https://force-graph.pages.dev/](https://force-graph.pages.dev/).
+
 ## License
 
 See [LICENSE](LICENSE) for details.
