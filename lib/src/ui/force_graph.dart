@@ -152,10 +152,14 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller.removeListener(_refreshUI);
-      oldWidget.controller.removeNodeOnSecondaryTapListener(_onNodeSecondaryTap);
+      oldWidget.controller.removeNodeOnSecondaryTapListener(
+        _onNodeSecondaryTap,
+      );
       oldWidget.controller.removeOnSecondaryTapListener(_onSecondaryTap);
       if (oldWidget.onSelectionChanged != null) {
-        oldWidget.controller.removeOnSelectionChangedListener(oldWidget.onSelectionChanged!);
+        oldWidget.controller.removeOnSelectionChangedListener(
+          oldWidget.onSelectionChanged!,
+        );
       }
       oldWidget.controller.stop();
       oldWidget.controller.disposeTicker();
@@ -169,7 +173,9 @@ class _GraphPhysicsViewState extends State<ForceGraphWidget>
       widget.controller.addNodeOnSecondaryTapListener(_onNodeSecondaryTap);
       widget.controller.addOnSecondaryTapListener(_onSecondaryTap);
       if (widget.onSelectionChanged != null) {
-        widget.controller.addOnSelectionChangedListener(widget.onSelectionChanged!);
+        widget.controller.addOnSelectionChangedListener(
+          widget.onSelectionChanged!,
+        );
       }
       if (oldWidget.controller.viewportController.hasSize) {
         widget.controller.updateCanvasSize(

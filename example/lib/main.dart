@@ -21,8 +21,9 @@ class _ForceGraphShowcaseAppState extends State<ForceGraphShowcaseApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode = _themeMode == ThemeMode.dark
+          ? ThemeMode.light
+          : ThemeMode.dark;
     });
   }
 
@@ -37,20 +38,14 @@ class _ForceGraphShowcaseAppState extends State<ForceGraphShowcaseApp> {
         brightness: Brightness.light,
         colorSchemeSeed: const Color(0xFF6366F1),
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        cardTheme: const CardThemeData(
-          elevation: 2,
-          color: Colors.white,
-        ),
+        cardTheme: const CardThemeData(elevation: 2, color: Colors.white),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF818CF8),
         scaffoldBackgroundColor: const Color(0xFF0F172A),
-        cardTheme: const CardThemeData(
-          elevation: 4,
-          color: Color(0xFF1E293B),
-        ),
+        cardTheme: const CardThemeData(elevation: 4, color: Color(0xFF1E293B)),
       ),
       home: GraphShowcasePage(
         onToggleTheme: _toggleTheme,
@@ -102,9 +97,7 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
         return DistanceGraphBuilder(minDistance: 90, maxDistance: 260);
       case 'spring':
       default:
-        return SpringEmbedderGraphBuilder(
-          iterations: 400,
-        );
+        return SpringEmbedderGraphBuilder(iterations: 400);
     }
   }
 
@@ -163,10 +156,8 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AddNodeDialog(
-        controller: _controller,
-        position: worldPos,
-      ),
+      builder: (ctx) =>
+          AddNodeDialog(controller: _controller, position: worldPos),
     );
   }
 
@@ -218,23 +209,26 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
             child: ForceGraphWidget(
               key: ValueKey(_controller),
               controller: _controller,
-              selectionOverlayColor:
-                  theme.colorScheme.primary.withValues(alpha: 0.15),
+              selectionOverlayColor: theme.colorScheme.primary.withValues(
+                alpha: 0.15,
+              ),
               showControlBar: true,
-              controlBarAlignment:
-                  isCompact ? Alignment.bottomCenter : Alignment.bottomRight,
-              controlBarDirection:
-                  isCompact ? Axis.horizontal : Axis.vertical,
+              controlBarAlignment: isCompact
+                  ? Alignment.bottomCenter
+                  : Alignment.bottomRight,
+              controlBarDirection: isCompact ? Axis.horizontal : Axis.vertical,
 
               // Rich Node Tooltip
               nodeTooltipBuilder: (context, node) {
                 final category = node.data.data is Map
                     ? (node.data.data as Map)['category']?.toString()
                     : null;
-                final connected = _controller.joints.where(
-                  (j) =>
-                      j.data.source == node.iD || j.data.target == node.iD,
-                ).length;
+                final connected = _controller.joints
+                    .where(
+                      (j) =>
+                          j.data.source == node.iD || j.data.target == node.iD,
+                    )
+                    .length;
 
                 return Card(
                   child: Padding(
@@ -253,7 +247,8 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: node.data.style
+                                color:
+                                    node.data.style
                                         .fromContext(context)
                                         .color ??
                                     theme.colorScheme.primary,
@@ -299,14 +294,10 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
 
               // Rich Edge Tooltip
               edgeTooltipBuilder: (context, edge) {
-                final sourceNode =
-                    _controller.getNodeOrNull(edge.data.source);
-                final targetNode =
-                    _controller.getNodeOrNull(edge.data.target);
-                final sourceName =
-                    sourceNode?.data.title ?? edge.data.source;
-                final targetName =
-                    targetNode?.data.title ?? edge.data.target;
+                final sourceNode = _controller.getNodeOrNull(edge.data.source);
+                final targetNode = _controller.getNodeOrNull(edge.data.target);
+                final sourceName = sourceNode?.data.title ?? edge.data.source;
+                final targetName = targetNode?.data.title ?? edge.data.target;
 
                 return Card(
                   child: Padding(
@@ -349,9 +340,10 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
               },
 
               // Right-Click Context Menu on Node
-              nodeContextMenuBuilder: (context, controller, node, position, dismiss) {
-                return _buildNodeContextMenu(context, node, dismiss);
-              },
+              nodeContextMenuBuilder:
+                  (context, controller, node, position, dismiss) {
+                    return _buildNodeContextMenu(context, node, dismiss);
+                  },
 
               // Right-Click Context Menu on Canvas Background
               contextMenuBuilder: (context, controller, position, dismiss) {
@@ -424,7 +416,9 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
             ),
           ],
         ),
-        child: isCompact ? _buildCompactTopBar(context) : _buildDesktopTopBar(context),
+        child: isCompact
+            ? _buildCompactTopBar(context)
+            : _buildDesktopTopBar(context),
       ),
     );
   }
@@ -496,10 +490,22 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
               value: _layoutAlgorithm,
               borderRadius: BorderRadius.circular(12),
               items: const [
-                DropdownMenuItem(value: 'spring', child: Text('Spring Embedder')),
-                DropdownMenuItem(value: 'circular', child: Text('Circular Layout')),
-                DropdownMenuItem(value: 'hierarchical', child: Text('Hierarchical')),
-                DropdownMenuItem(value: 'distance', child: Text('Distance Layout')),
+                DropdownMenuItem(
+                  value: 'spring',
+                  child: Text('Spring Embedder'),
+                ),
+                DropdownMenuItem(
+                  value: 'circular',
+                  child: Text('Circular Layout'),
+                ),
+                DropdownMenuItem(
+                  value: 'hierarchical',
+                  child: Text('Hierarchical'),
+                ),
+                DropdownMenuItem(
+                  value: 'distance',
+                  child: Text('Distance Layout'),
+                ),
               ],
               onChanged: (layout) {
                 if (layout != null) _changeLayout(layout);
@@ -515,7 +521,9 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
             child: Container(
               height: 38,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.6,
+                ),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
@@ -523,7 +531,10 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
                 onChanged: _onSearch,
                 decoration: InputDecoration(
                   hintText: 'Search nodes...',
-                  hintStyle: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   prefixIcon: const Icon(Icons.search, size: 18),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -575,19 +586,23 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
             icon: Icon(
               _controller.nodeLabelVisibility == NodeLabelVisibility.always
                   ? Icons.label
-                  : (_controller.nodeLabelVisibility == NodeLabelVisibility.never
-                      ? Icons.label_off
-                      : Icons.label_outline),
+                  : (_controller.nodeLabelVisibility ==
+                            NodeLabelVisibility.never
+                        ? Icons.label_off
+                        : Icons.label_outline),
             ),
             tooltip: 'Labels: ${_controller.nodeLabelVisibility.name}',
             onPressed: () {
               setState(() {
-                _controller.nodeLabelVisibility = switch (_controller.nodeLabelVisibility) {
-                  NodeLabelVisibility.hoveredOrSelected => NodeLabelVisibility.always,
-                  NodeLabelVisibility.always => NodeLabelVisibility.never,
-                  NodeLabelVisibility.never => NodeLabelVisibility.hoveredOrSelected,
-                  _ => NodeLabelVisibility.hoveredOrSelected,
-                };
+                _controller.nodeLabelVisibility =
+                    switch (_controller.nodeLabelVisibility) {
+                      NodeLabelVisibility.hoveredOrSelected =>
+                        NodeLabelVisibility.always,
+                      NodeLabelVisibility.always => NodeLabelVisibility.never,
+                      NodeLabelVisibility.never =>
+                        NodeLabelVisibility.hoveredOrSelected,
+                      _ => NodeLabelVisibility.hoveredOrSelected,
+                    };
               });
             },
           ),
@@ -634,7 +649,10 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
               onPressed: _openSettings,
             ),
             IconButton(
-              icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 20),
+              icon: Icon(
+                widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                size: 20,
+              ),
               onPressed: widget.onToggleTheme,
             ),
           ],
@@ -666,9 +684,18 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
                   isExpanded: true,
                   items: const [
                     DropdownMenuItem(value: 'spring', child: Text('Spring')),
-                    DropdownMenuItem(value: 'circular', child: Text('Circular')),
-                    DropdownMenuItem(value: 'hierarchical', child: Text('Hierarchy')),
-                    DropdownMenuItem(value: 'distance', child: Text('Distance')),
+                    DropdownMenuItem(
+                      value: 'circular',
+                      child: Text('Circular'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'hierarchical',
+                      child: Text('Hierarchy'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'distance',
+                      child: Text('Distance'),
+                    ),
                   ],
                   onChanged: (layout) {
                     if (layout != null) _changeLayout(layout);
@@ -682,7 +709,11 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
     );
   }
 
-  Widget _buildNodeContextMenu(BuildContext context, ForceGraphNode node, VoidCallback dismiss) {
+  Widget _buildNodeContextMenu(
+    BuildContext context,
+    ForceGraphNode node,
+    VoidCallback dismiss,
+  ) {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -695,7 +726,10 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
               child: Text(
                 node.data.title.isNotEmpty ? node.data.title : node.iD,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ),
             const Divider(height: 1),
@@ -747,8 +781,15 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
             ),
             ListTile(
               dense: true,
-              leading: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-              title: const Text('Delete Node', style: TextStyle(color: Colors.red)),
+              leading: const Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: Colors.red,
+              ),
+              title: const Text(
+                'Delete Node',
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 dismiss();
                 _controller.removeNode(node.iD);
@@ -761,7 +802,11 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
     );
   }
 
-  Widget _buildCanvasContextMenu(BuildContext context, Offset position, VoidCallback dismiss) {
+  Widget _buildCanvasContextMenu(
+    BuildContext context,
+    Offset position,
+    VoidCallback dismiss,
+  ) {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

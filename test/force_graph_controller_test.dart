@@ -11,15 +11,13 @@ void main() {
       final controller = ForceGraphController();
       controller.updateCanvasSize(const Size(800, 600));
 
-      controller.addNode(ForceGraphNodeData.from(id: 'root', title: 'Root Node'));
+      controller.addNode(
+        ForceGraphNodeData.from(id: 'root', title: 'Root Node'),
+      );
 
       // Add dynamic node
       final childNode = controller.addNode(
-        ForceGraphNodeData.from(
-          id: 'child-1',
-          title: 'Child 1',
-          pinned: true,
-        ),
+        ForceGraphNodeData.from(id: 'child-1', title: 'Child 1', pinned: true),
         position: Vector2(5, 5),
       );
 
@@ -47,10 +45,21 @@ void main() {
       final controller = ForceGraphController();
       controller.updateCanvasSize(const Size(800, 600));
 
-      controller.addNode(ForceGraphNodeData.from(id: 'auth_service', title: 'Authentication Service'));
-      controller.addNode(ForceGraphNodeData.from(id: 'db_pg', title: 'PostgreSQL Database'));
-      controller.addNode(ForceGraphNodeData.from(id: 'cache_redis', title: 'Redis Cache'));
-      controller.addNode(ForceGraphNodeData.from(id: 'api_gw', title: 'API Gateway'));
+      controller.addNode(
+        ForceGraphNodeData.from(
+          id: 'auth_service',
+          title: 'Authentication Service',
+        ),
+      );
+      controller.addNode(
+        ForceGraphNodeData.from(id: 'db_pg', title: 'PostgreSQL Database'),
+      );
+      controller.addNode(
+        ForceGraphNodeData.from(id: 'cache_redis', title: 'Redis Cache'),
+      );
+      controller.addNode(
+        ForceGraphNodeData.from(id: 'api_gw', title: 'API Gateway'),
+      );
 
       final searchResults = controller.searchNodes('auth');
       expect(searchResults.any((n) => n.iD == 'auth_service'), isTrue);
@@ -86,8 +95,12 @@ void main() {
       final controller = ForceGraphController();
       controller.updateCanvasSize(const Size(800, 600));
 
-      final n1 = controller.addNode(ForceGraphNodeData.from(id: '1', title: 'One'));
-      final n2 = controller.addNode(ForceGraphNodeData.from(id: '2', title: 'Two'));
+      final n1 = controller.addNode(
+        ForceGraphNodeData.from(id: '1', title: 'One'),
+      );
+      final n2 = controller.addNode(
+        ForceGraphNodeData.from(id: '2', title: 'Two'),
+      );
 
       controller.highlightNodes(['1']);
       expect(n1.opacity, 1.0);
@@ -105,7 +118,10 @@ void main() {
       );
 
       expect(controller.edgeHighlightColor, Colors.teal);
-      expect(controller.nodeLabelVisibility, NodeLabelVisibility.hoveredOrSelected);
+      expect(
+        controller.nodeLabelVisibility,
+        NodeLabelVisibility.hoveredOrSelected,
+      );
 
       controller.nodeLabelVisibility = NodeLabelVisibility.always;
       expect(controller.nodeLabelVisibility, NodeLabelVisibility.always);

@@ -118,7 +118,10 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Physics Linear Damping', style: theme.textTheme.labelLarge),
-              Text(_damping.toStringAsFixed(1), style: theme.textTheme.bodyMedium),
+              Text(
+                _damping.toStringAsFixed(1),
+                style: theme.textTheme.bodyMedium,
+              ),
             ],
           ),
           Slider(

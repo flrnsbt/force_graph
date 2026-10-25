@@ -4,11 +4,10 @@ version: 0.6.0
 repository: https://github.com/flrnsbt/force_graph
 homepage: https://pub.dev/packages/force_graph
 documentation: https://raw.githubusercontent.com/flrnsbt/force_graph/refs/heads/main/README.md
-publish_to: https://pub.dev/packages/force_graph
 topics: 
-  - Graph
-  - Forge2D
-  - Force-Directed Graph
+  - graph
+  - forge2d
+  - force-directed-graph
 
 environment:
   sdk: ^3.8.1

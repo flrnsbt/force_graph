@@ -39,8 +39,7 @@ void performDistanceLayoutIsolate(dynamic input) {
       final rawNodes = unwrappedInput['nodes'];
       final minDistance = (unwrappedInput['minDistance'] as num).toDouble();
       final tolerance = (unwrappedInput['tolerance'] as num).toDouble();
-      final preserved =
-          unwrappedInput['positionsToPreserve'] as Map?;
+      final preserved = unwrappedInput['positionsToPreserve'] as Map?;
 
       if (preserved case final Map<String, dynamic> preservedMap) {
         for (final entry in preservedMap.entries) {

@@ -30,10 +30,7 @@ void main() {
         pinned: false,
       );
 
-      final modified = original.copyWith(
-        title: 'Modified',
-        pinned: true,
-      );
+      final modified = original.copyWith(title: 'Modified', pinned: true);
 
       expect(modified.iD, 'node-1');
       expect(modified.title, 'Modified');
@@ -48,10 +45,7 @@ void main() {
         target: 'node-2',
         similarity: 0.9,
       );
-      final original = ForceGraphNodeData.from(
-        id: 'node-1',
-        edges: [edge],
-      );
+      final original = ForceGraphNodeData.from(id: 'node-1', edges: [edge]);
 
       final copy = original.deepCopy();
       expect(copy.edges.length, 1);

@@ -198,7 +198,7 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
             return true;
           }
           final progress = value['progress'];
-          if (progress is num) {  
+          if (progress is num) {
             progressCallback?.call(progress.toInt());
             return false;
           }
@@ -270,7 +270,7 @@ class HierarchicalGraphBuilder extends ForceDirectedGraphBuilder {
 
     _positions.clear();
     int processed = 0;
-final double verticalVariation =
+    final double verticalVariation =
         verticalSpacing * 0.05; // how strong the zigzag is
 
     // Assign positions
@@ -389,7 +389,6 @@ abstract class ForceDirectedGraphBuilder {
   //TODO: implement
   bool ensureReady(double dt, ForceGraphController controller) => true;
 
-
   double? _minDistance;
   double? _maxDistance;
   double get minDistance => _minDistance!;
@@ -428,8 +427,8 @@ abstract class ForceDirectedGraphBuilder {
     this.debugLogs = false,
     double? minDistance,
     double? maxDistance,
-  })  : _hasExplicitMinDistance = minDistance != null,
-        _hasExplicitMaxDistance = maxDistance != null {
+  }) : _hasExplicitMinDistance = minDistance != null,
+       _hasExplicitMaxDistance = maxDistance != null {
     if (minDistance != null) {
       this.minDistance = minDistance;
     }
@@ -551,7 +550,8 @@ abstract class ForceDirectedGraphBuilder {
       var position = _positions[node.iD];
       if (position == null) {
         final angle = rand.nextDouble() * 2 * pi;
-        final r = (hasMinDistance ? minDistance : 1.0) *
+        final r =
+            (hasMinDistance ? minDistance : 1.0) *
             (2.0 + rand.nextDouble() * 2.0);
         position = Point(
           fallbackCenter.x + r * cos(angle),

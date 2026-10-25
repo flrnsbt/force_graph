@@ -1744,7 +1744,8 @@ class ForceGraphEdge {
       }
     }
 
-    final zoomScale = _controller.viewportController.scale *
+    final zoomScale =
+        _controller.viewportController.scale *
         _controller.viewportController.zoom;
     final double strokeWidthWorld = (zoomScale > 0)
         ? (max(1.0, pixelWeight) / zoomScale)
@@ -1764,8 +1765,10 @@ class ForceGraphEdge {
         final targetRadius = targetNode?.data.radius ?? 18.0;
 
         final effectiveZoom = zoomScale > 0 ? zoomScale : 1.0;
-        final arrowLength = (11.0 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
-        final arrowWidth = (6.5 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
+        final arrowLength =
+            (11.0 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
+        final arrowWidth =
+            (6.5 * (highlight || hovered ? 1.3 : 1.0)) / effectiveZoom;
         final tip = p2 - dir * (targetRadius + 2.0 / effectiveZoom);
         final base = tip - dir * arrowLength;
         final left = base + normal * arrowWidth;
@@ -1997,14 +2000,17 @@ class ForceGraphNode {
         }
       }
       if (borderWidth > 0) {
-        final zoomScale = _controller.viewportController.scale *
+        final zoomScale =
+            _controller.viewportController.scale *
             _controller.viewportController.zoom;
         final double strokeWidthWorld;
         if (style.borderWidthRatio) {
           strokeWidthWorld = borderWidth * radius;
         } else {
           // borderWidth is in screen pixels (e.g. 2.0 or 3.0), convert to world coords
-          strokeWidthWorld = (zoomScale > 0) ? (borderWidth / zoomScale) : borderWidth;
+          strokeWidthWorld = (zoomScale > 0)
+              ? (borderWidth / zoomScale)
+              : borderWidth;
         }
         // Cap strokeWidthWorld so it never dominates the node itself (max 25% of radius)
         final effectiveStrokeWidth = min(strokeWidthWorld, radius * 0.25);
@@ -2030,7 +2036,10 @@ class ForceGraphNode {
             r = 2 - r;
           }
 
-          strokeRadius = radius + (effectiveStrokeWidth / 2) + effectiveStrokeWidth * (r * 0.6 + 0.2);
+          strokeRadius =
+              radius +
+              (effectiveStrokeWidth / 2) +
+              effectiveStrokeWidth * (r * 0.6 + 0.2);
         }
 
         if (_opacity != 1) {
@@ -2090,20 +2099,21 @@ class ForceGraphNode {
         _controller.viewportController.scale *
         _controller.viewportController.zoom;
 
-    final defaultTextColor =
-        isDark ? Colors.white : const Color(0xFF1E293B);
+    final defaultTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final effectiveStyle =
         (data.labelStyle ??
-            TextStyle(
-              fontSize: 10.5,
-              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-              color: defaultTextColor,
-            )).copyWith(
-          color: (data.labelStyle?.color ?? defaultTextColor).withValues(
-            alpha:
-                (data.labelStyle?.color?.a ?? defaultTextColor.a) * _opacity,
-          ),
-        );
+                TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  color: defaultTextColor,
+                ))
+            .copyWith(
+              color: (data.labelStyle?.color ?? defaultTextColor).withValues(
+                alpha:
+                    (data.labelStyle?.color?.a ?? defaultTextColor.a) *
+                    _opacity,
+              ),
+            );
 
     final span = TextSpan(text: title, style: effectiveStyle);
     final tp = TextPainter(

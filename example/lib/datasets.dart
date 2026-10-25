@@ -21,11 +21,11 @@ class GraphDataset {
 
 class ExampleDatasets {
   static List<GraphDataset> get all => [
-        knowledgeGraph,
-        dependencyGraph,
-        socialNetwork,
-        playground,
-      ];
+    knowledgeGraph,
+    dependencyGraph,
+    socialNetwork,
+    playground,
+  ];
 
   // Helper to build responsive high-contrast style for dark & light mode
   static GraphComponentStyle _buildNodeStyle(Color color) {
@@ -51,11 +51,10 @@ class ExampleDatasets {
   static final GraphDataset knowledgeGraph = GraphDataset(
     id: 'knowledge',
     title: 'AI Knowledge Graph',
-    description: 'Interconnected concepts in Artificial Intelligence & Machine Learning',
+    description:
+        'Interconnected concepts in Artificial Intelligence & Machine Learning',
     icon: Icons.hub_rounded,
-    defaultBuilder: () => SpringEmbedderGraphBuilder(
-      iterations: 400,
-    ),
+    defaultBuilder: () => SpringEmbedderGraphBuilder(iterations: 400),
     generator: () {
       final categories = <String, Color>{
         'Core AI': const Color(0xFF6366F1), // Indigo
@@ -99,21 +98,27 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 2.0,
               label: 'includes',
-              style: GraphComponentStyle.from(color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'ai',
               target: 'knowledge_rep',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF6366F1).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'ai',
               target: 'expert_sys',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF6366F1).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -129,28 +134,36 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 1.9,
               label: 'subset',
-              style: GraphComponentStyle.from(color: const Color(0xFF3B82F6).withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'ml',
               target: 'super_learning',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'ml',
               target: 'unsuper_learning',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'ml',
               target: 'rl',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -165,28 +178,36 @@ class ExampleDatasets {
               target: 'transformers',
               similarity: 0.65,
               weight: 1.9,
-              style: GraphComponentStyle.from(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'dl',
               target: 'cnn',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFF8B5CF6).withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'dl',
               target: 'rnn',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'dl',
               target: 'pytorch',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -202,21 +223,27 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 2.0,
               label: 'powers',
-              style: GraphComponentStyle.from(color: const Color(0xFFEC4899).withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFEC4899).withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'transformers',
               target: 'attention',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFFEC4899).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFEC4899).withValues(alpha: 0.4),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'transformers',
               target: 'bert',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFEC4899).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFEC4899).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -231,20 +258,34 @@ class ExampleDatasets {
               target: 'prompt_eng',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFEC4899).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFEC4899).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'llms',
               target: 'rlhf',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFFEC4899).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFEC4899).withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
-        makeNode(id: 'attention', title: 'Self-Attention', category: 'NLP', radius: 9.5),
+        makeNode(
+          id: 'attention',
+          title: 'Self-Attention',
+          category: 'NLP',
+          radius: 9.5,
+        ),
         makeNode(id: 'bert', title: 'BERT', category: 'NLP', radius: 9.5),
-        makeNode(id: 'prompt_eng', title: 'Prompt Engineering', category: 'NLP', radius: 9.5),
+        makeNode(
+          id: 'prompt_eng',
+          title: 'Prompt Engineering',
+          category: 'NLP',
+          radius: 9.5,
+        ),
         makeNode(
           id: 'rlhf',
           title: 'RLHF Alignment',
@@ -256,7 +297,9 @@ class ExampleDatasets {
               target: 'rl',
               similarity: 0.6,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -271,18 +314,27 @@ class ExampleDatasets {
               target: 'obj_detect',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'cnn',
               target: 'diffusion',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
-        makeNode(id: 'obj_detect', title: 'Object Detection', category: 'Computer Vision', radius: 9.5),
+        makeNode(
+          id: 'obj_detect',
+          title: 'Object Detection',
+          category: 'Computer Vision',
+          radius: 9.5,
+        ),
         makeNode(
           id: 'diffusion',
           title: 'Diffusion Models',
@@ -294,16 +346,48 @@ class ExampleDatasets {
               target: 'dl',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
-        makeNode(id: 'rnn', title: 'Recurrent Nets (LSTM)', category: 'Deep Learning', radius: 9.5),
-        makeNode(id: 'super_learning', title: 'Supervised Learning', category: 'Machine Learning', radius: 9.5),
-        makeNode(id: 'unsuper_learning', title: 'Unsupervised Learning', category: 'Machine Learning', radius: 9.5),
-        makeNode(id: 'rl', title: 'Reinforcement Learning', category: 'Machine Learning', radius: 11.0),
-        makeNode(id: 'knowledge_rep', title: 'Knowledge Graphs', category: 'Core AI', radius: 9.5),
-        makeNode(id: 'expert_sys', title: 'Expert Systems', category: 'Core AI', radius: 9.5),
+        makeNode(
+          id: 'rnn',
+          title: 'Recurrent Nets (LSTM)',
+          category: 'Deep Learning',
+          radius: 9.5,
+        ),
+        makeNode(
+          id: 'super_learning',
+          title: 'Supervised Learning',
+          category: 'Machine Learning',
+          radius: 9.5,
+        ),
+        makeNode(
+          id: 'unsuper_learning',
+          title: 'Unsupervised Learning',
+          category: 'Machine Learning',
+          radius: 9.5,
+        ),
+        makeNode(
+          id: 'rl',
+          title: 'Reinforcement Learning',
+          category: 'Machine Learning',
+          radius: 11.0,
+        ),
+        makeNode(
+          id: 'knowledge_rep',
+          title: 'Knowledge Graphs',
+          category: 'Core AI',
+          radius: 9.5,
+        ),
+        makeNode(
+          id: 'expert_sys',
+          title: 'Expert Systems',
+          category: 'Core AI',
+          radius: 9.5,
+        ),
         makeNode(
           id: 'pytorch',
           title: 'PyTorch & CUDA',
@@ -315,11 +399,18 @@ class ExampleDatasets {
               target: 'gpu_clusters',
               similarity: 0.6,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
-        makeNode(id: 'gpu_clusters', title: 'GPU Clusters', category: 'Infrastructure', radius: 9.5),
+        makeNode(
+          id: 'gpu_clusters',
+          title: 'GPU Clusters',
+          category: 'Infrastructure',
+          radius: 9.5,
+        ),
       ];
 
       return nodes;
@@ -332,10 +423,8 @@ class ExampleDatasets {
     title: 'Package Dependencies',
     description: 'Directed dependency DAG with arrows & module layers',
     icon: Icons.account_tree_rounded,
-    defaultBuilder: () => HierarchicalGraphBuilder(
-      horizontalSpacing: 120,
-      verticalSpacing: 110,
-    ),
+    defaultBuilder: () =>
+        HierarchicalGraphBuilder(horizontalSpacing: 120, verticalSpacing: 110),
     generator: () {
       ForceGraphNodeData makePkg({
         required String id,
@@ -372,7 +461,9 @@ class ExampleDatasets {
               weight: 2.0,
               directed: true,
               label: '^0.6.0',
-              style: GraphComponentStyle.from(color: appColor.withValues(alpha: 0.6)),
+              style: GraphComponentStyle.from(
+                color: appColor.withValues(alpha: 0.6),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'app',
@@ -381,7 +472,9 @@ class ExampleDatasets {
               weight: 1.6,
               directed: true,
               label: '^6.1.0',
-              style: GraphComponentStyle.from(color: appColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: appColor.withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'app',
@@ -390,7 +483,9 @@ class ExampleDatasets {
               weight: 1.6,
               directed: true,
               label: '^8.1.0',
-              style: GraphComponentStyle.from(color: appColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: appColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -406,7 +501,9 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 1.9,
               directed: true,
-              style: GraphComponentStyle.from(color: coreColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: coreColor.withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'force_graph',
@@ -414,7 +511,9 @@ class ExampleDatasets {
               similarity: 0.6,
               weight: 1.8,
               directed: true,
-              style: GraphComponentStyle.from(color: coreColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: coreColor.withValues(alpha: 0.5),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'force_graph',
@@ -422,7 +521,9 @@ class ExampleDatasets {
               similarity: 0.6,
               weight: 1.8,
               directed: true,
-              style: GraphComponentStyle.from(color: coreColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: coreColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -438,7 +539,9 @@ class ExampleDatasets {
               similarity: 0.55,
               weight: 1.6,
               directed: true,
-              style: GraphComponentStyle.from(color: utilColor.withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: utilColor.withValues(alpha: 0.45),
+              ),
             ),
           ],
         ),
@@ -454,7 +557,9 @@ class ExampleDatasets {
               similarity: 0.6,
               weight: 1.6,
               directed: true,
-              style: GraphComponentStyle.from(color: utilColor.withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: utilColor.withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'flutter_bloc',
@@ -462,7 +567,9 @@ class ExampleDatasets {
               similarity: 0.55,
               weight: 1.6,
               directed: true,
-              style: GraphComponentStyle.from(color: utilColor.withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: utilColor.withValues(alpha: 0.45),
+              ),
             ),
           ],
         ),
@@ -478,7 +585,9 @@ class ExampleDatasets {
               similarity: 0.5,
               weight: 1.6,
               directed: true,
-              style: GraphComponentStyle.from(color: utilColor.withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: utilColor.withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
@@ -495,7 +604,9 @@ class ExampleDatasets {
               similarity: 0.6,
               weight: 1.8,
               directed: true,
-              style: GraphComponentStyle.from(color: engineColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: engineColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -511,7 +622,9 @@ class ExampleDatasets {
               similarity: 0.55,
               weight: 1.6,
               directed: true,
-              style: GraphComponentStyle.from(color: engineColor.withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: engineColor.withValues(alpha: 0.45),
+              ),
             ),
           ],
         ),
@@ -527,7 +640,9 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 1.9,
               directed: true,
-              style: GraphComponentStyle.from(color: coreColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: coreColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -543,13 +658,30 @@ class ExampleDatasets {
               similarity: 0.65,
               weight: 1.9,
               directed: true,
-              style: GraphComponentStyle.from(color: coreColor.withValues(alpha: 0.5)),
+              style: GraphComponentStyle.from(
+                color: coreColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
-        makePkg(id: 'vector_math', title: 'vector_math_64', color: utilColor, radius: 9.5),
-        makePkg(id: 'dart_async', title: 'dart:async', color: utilColor, radius: 9.5),
-        makePkg(id: 'dart_ui', title: 'dart:ui / engine', color: engineColor, radius: 9.5),
+        makePkg(
+          id: 'vector_math',
+          title: 'vector_math_64',
+          color: utilColor,
+          radius: 9.5,
+        ),
+        makePkg(
+          id: 'dart_async',
+          title: 'dart:async',
+          color: utilColor,
+          radius: 9.5,
+        ),
+        makePkg(
+          id: 'dart_ui',
+          title: 'dart:ui / engine',
+          color: engineColor,
+          radius: 9.5,
+        ),
       ];
     },
   );
@@ -558,7 +690,8 @@ class ExampleDatasets {
   static final GraphDataset socialNetwork = GraphDataset(
     id: 'social',
     title: 'Team & Social Network',
-    description: 'Cross-functional collaborative teams with connection strengths',
+    description:
+        'Cross-functional collaborative teams with connection strengths',
     icon: Icons.groups_rounded,
     defaultBuilder: () => CircularGraphBuilder(radius: 200),
     generator: () {
@@ -599,21 +732,27 @@ class ExampleDatasets {
               target: 'u2',
               similarity: 0.65,
               weight: 1.9,
-              style: GraphComponentStyle.from(color: const Color(0xFFF43F5E).withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u1',
               target: 'u3',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF43F5E).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u1',
               target: 'u5',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -628,14 +767,18 @@ class ExampleDatasets {
               target: 'u4',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFFF43F5E).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u2',
               target: 'u3',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF43F5E).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -650,21 +793,27 @@ class ExampleDatasets {
               target: 'u4',
               similarity: 0.65,
               weight: 1.9,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u3',
               target: 'u6',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u3',
               target: 'u7',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -679,14 +828,18 @@ class ExampleDatasets {
               target: 'u5',
               similarity: 0.65,
               weight: 1.9,
-              style: GraphComponentStyle.from(color: const Color(0xFF06B6D4).withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u4',
               target: 'u6',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF06B6D4).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
@@ -701,7 +854,9 @@ class ExampleDatasets {
               target: 'u6',
               similarity: 0.5,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF06B6D4).withValues(alpha: 0.35)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
+              ),
             ),
           ],
         ),
@@ -716,14 +871,18 @@ class ExampleDatasets {
               target: 'u7',
               similarity: 0.65,
               weight: 2.0,
-              style: GraphComponentStyle.from(color: const Color(0xFF10B981).withValues(alpha: 0.45)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF10B981).withValues(alpha: 0.45),
+              ),
             ),
             ForceGraphEdgeData.from(
               source: 'u6',
               target: 'u8',
               similarity: 0.55,
               weight: 1.6,
-              style: GraphComponentStyle.from(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF10B981).withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
@@ -738,11 +897,18 @@ class ExampleDatasets {
               target: 'u8',
               similarity: 0.6,
               weight: 1.8,
-              style: GraphComponentStyle.from(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+              style: GraphComponentStyle.from(
+                color: const Color(0xFF10B981).withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
-        makePerson(id: 'u8', name: 'Sophia (Data Eng)', team: 'Eng Backend', radius: 9.5),
+        makePerson(
+          id: 'u8',
+          name: 'Sophia (Data Eng)',
+          team: 'Eng Backend',
+          radius: 9.5,
+        ),
       ];
     },
   );
@@ -751,11 +917,10 @@ class ExampleDatasets {
   static final GraphDataset playground = GraphDataset(
     id: 'playground',
     title: 'Interactive Playground',
-    description: 'Dynamic sandbox for editing, adding nodes, and tuning physics',
+    description:
+        'Dynamic sandbox for editing, adding nodes, and tuning physics',
     icon: Icons.games_rounded,
-    defaultBuilder: () => SpringEmbedderGraphBuilder(
-      iterations: 400,
-    ),
+    defaultBuilder: () => SpringEmbedderGraphBuilder(iterations: 400),
     generator: () => generatePlaygroundNodes(count: 18),
   );
 
@@ -794,7 +959,9 @@ class ExampleDatasets {
           target: nodes[next].iD,
           similarity: 0.6,
           weight: 1.8,
-          style: GraphComponentStyle.from(color: Colors.grey.withValues(alpha: 0.35)),
+          style: GraphComponentStyle.from(
+            color: Colors.grey.withValues(alpha: 0.35),
+          ),
         ),
       );
 
@@ -805,7 +972,9 @@ class ExampleDatasets {
             target: nodes[cross].iD,
             similarity: 0.45,
             weight: 1.6,
-            style: GraphComponentStyle.from(color: Colors.grey.withValues(alpha: 0.25)),
+            style: GraphComponentStyle.from(
+              color: Colors.grey.withValues(alpha: 0.25),
+            ),
           ),
         );
       }

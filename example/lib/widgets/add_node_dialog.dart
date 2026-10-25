@@ -5,11 +5,7 @@ class AddNodeDialog extends StatefulWidget {
   final ForceGraphController controller;
   final Vector2? position;
 
-  const AddNodeDialog({
-    super.key,
-    required this.controller,
-    this.position,
-  });
+  const AddNodeDialog({super.key, required this.controller, this.position});
 
   @override
   State<AddNodeDialog> createState() => _AddNodeDialogState();
@@ -149,7 +145,12 @@ class _AddNodeDialogState extends State<AddNodeDialog> {
                         width: 2.5,
                       ),
                       boxShadow: isSelected
-                          ? [BoxShadow(color: c.withValues(alpha: 0.6), blurRadius: 6)]
+                          ? [
+                              BoxShadow(
+                                color: c.withValues(alpha: 0.6),
+                                blurRadius: 6,
+                              ),
+                            ]
                           : null,
                     ),
                   ),
@@ -166,11 +167,16 @@ class _AddNodeDialogState extends State<AddNodeDialog> {
                 initialValue: _connectToId,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('(None - Isolated)')),
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('(None - Isolated)'),
+                  ),
                   ...existingNodes.map((n) {
                     return DropdownMenuItem(
                       value: n.iD,
-                      child: Text(n.data.title.isNotEmpty ? n.data.title : n.iD),
+                      child: Text(
+                        n.data.title.isNotEmpty ? n.data.title : n.iD,
+                      ),
                     );
                   }),
                 ],

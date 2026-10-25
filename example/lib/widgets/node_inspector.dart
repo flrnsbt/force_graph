@@ -88,17 +88,25 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                 color: theme.colorScheme.primary.withValues(alpha: 0.12),
                 border: Border(
                   bottom: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.3,
+                    ),
                   ),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.layers, size: 18, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.layers,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      nodes.length == 1 ? 'Node Inspector' : '${nodes.length} Nodes Selected',
+                      nodes.length == 1
+                          ? 'Node Inspector'
+                          : '${nodes.length} Nodes Selected',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -124,7 +132,13 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                 separatorBuilder: (context, index) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final node = nodes[index];
-                  return _buildNodeCard(context, node, index, controller, theme);
+                  return _buildNodeCard(
+                    context,
+                    node,
+                    index,
+                    controller,
+                    theme,
+                  );
                 },
               ),
             ),
@@ -142,7 +156,8 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
     ThemeData theme,
   ) {
     final data = node.data;
-    final color = data.style.fromContext(context).color ?? theme.colorScheme.primary;
+    final color =
+        data.style.fromContext(context).color ?? theme.colorScheme.primary;
     final isExpanded = _expandedIndices.contains(index);
     final connectedEdges = controller.joints
         .where((j) => j.data.source == node.iD || j.data.target == node.iD)
@@ -152,9 +167,7 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -205,7 +218,10 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
           ),
           // Expanded content
           if (isExpanded) ...[
-            Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+            Divider(
+              height: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Column(
@@ -219,10 +235,12 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                       Chip(
                         label: Text('ID: ${node.iD}'),
                         visualDensity: VisualDensity.compact,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         labelStyle: const TextStyle(fontSize: 11),
                       ),
-                      if (data.data is Map && (data.data as Map)['category'] != null)
+                      if (data.data is Map &&
+                          (data.data as Map)['category'] != null)
                         Chip(
                           avatar: const Icon(Icons.label, size: 12),
                           label: Text('${(data.data as Map)['category']}'),
@@ -232,7 +250,11 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                         ),
                       if (node.isPinned)
                         Chip(
-                          avatar: const Icon(Icons.push_pin, size: 12, color: Colors.amber),
+                          avatar: const Icon(
+                            Icons.push_pin,
+                            size: 12,
+                            color: Colors.amber,
+                          ),
                           label: const Text('Pinned'),
                           visualDensity: VisualDensity.compact,
                           backgroundColor: Colors.amber.withValues(alpha: 0.2),
@@ -265,7 +287,9 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                             (context as Element).markNeedsBuild();
                           },
                           icon: Icon(
-                            node.isPinned ? Icons.push_pin_outlined : Icons.push_pin,
+                            node.isPinned
+                                ? Icons.push_pin_outlined
+                                : Icons.push_pin,
                             size: 14,
                             color: node.isPinned ? Colors.amber : null,
                           ),
@@ -294,7 +318,8 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                           ? edge.data.target
                           : edge.data.source;
                       final neighborNode = controller.getNodeOrNull(neighborId);
-                      final neighborTitle = neighborNode?.data.title ?? neighborId;
+                      final neighborTitle =
+                          neighborNode?.data.title ?? neighborId;
                       final isOutgoing = edge.data.source == node.iD;
 
                       return Padding(
@@ -303,7 +328,9 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                           children: [
                             Icon(
                               edge.data.directed
-                                  ? (isOutgoing ? Icons.arrow_forward : Icons.arrow_back)
+                                  ? (isOutgoing
+                                        ? Icons.arrow_forward
+                                        : Icons.arrow_back)
                                   : Icons.linear_scale,
                               size: 12,
                               color: color,
@@ -350,15 +377,25 @@ class _NodesInspectorPanelState extends State<NodesInspectorPanel> {
                   ] else ...[
                     const Text(
                       'No connections',
-                      style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 6),
                   // Delete button
                   OutlinedButton.icon(
                     onPressed: () => widget.onDelete(node.iD),
-                    icon: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
-                    label: const Text('Delete', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 14,
+                      color: Colors.red,
+                    ),
+                    label: const Text(
+                      'Delete',
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.redAccent),
                       visualDensity: VisualDensity.compact,

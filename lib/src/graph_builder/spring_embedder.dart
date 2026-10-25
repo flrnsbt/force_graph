@@ -21,12 +21,11 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       final edges = <ForceGraphEdgeDataMap>{};
       final rand = Random();
       final rawNodes = unwrappedInput['nodes'];
-      final rawPreserved =
-          unwrappedInput['positionsToPreserve'] as Map? ?? {};
+      final rawPreserved = unwrappedInput['positionsToPreserve'] as Map? ?? {};
       final int correctionIterations =
           (unwrappedInput['correctionIterations'] as num).toInt();
-      final correctionFactor =
-          (unwrappedInput['correctionFactor'] as num).toDouble();
+      final correctionFactor = (unwrappedInput['correctionFactor'] as num)
+          .toDouble();
 
       // Collect all node IDs first
       final nodeIds = <String>[];
@@ -52,8 +51,6 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
       // Temperature-based cooling parameters
       final double initialTemperature = min(width, height) * 0.12;
       final double finalTemperature = 0.5;
-
-
 
       // Temperature function - exponential cooling
       double getTemperature(int iteration, int totalIterations) {
@@ -162,10 +159,12 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
 
       initializeCircularLayout(positions, nodeIds);
 
-      final double repStrength =
-          (repulsion != null && repulsion > 0) ? (repulsion * 0.1) : 1.0;
-      final double attStrength =
-          (attraction != null && attraction > 0) ? (attraction * 5.0) : 0.45;
+      final double repStrength = (repulsion != null && repulsion > 0)
+          ? (repulsion * 0.1)
+          : 1.0;
+      final double attStrength = (attraction != null && attraction > 0)
+          ? (attraction * 5.0)
+          : 0.45;
 
       for (int i = 0; i < iterations; i++) {
         final temperature = getTemperature(i, iterations);
@@ -244,13 +243,17 @@ void performSpringEmbedderLayoutIsolate(dynamic input) {
             continue;
           }
 
-          final dispMag = sqrt(displacement.x * displacement.x +
-              displacement.y * displacement.y);
+          final dispMag = sqrt(
+            displacement.x * displacement.x + displacement.y * displacement.y,
+          );
           if (dispMag > 0.001) {
             final double step = min(dispMag, temperature);
             final double scale = step / dispMag;
             positions[id] = validatePosition(
-              Point(node.x + displacement.x * scale, node.y + displacement.y * scale),
+              Point(
+                node.x + displacement.x * scale,
+                node.y + displacement.y * scale,
+              ),
             );
           }
         }
