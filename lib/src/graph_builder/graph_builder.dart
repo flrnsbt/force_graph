@@ -198,7 +198,7 @@ class SpringEmbedderGraphBuilder extends ForceDirectedGraphBuilder {
             return true;
           }
           final progress = value['progress'];
-          if (progress is num) {
+          if (progress is num) {  
             progressCallback?.call(progress.toInt());
             return false;
           }

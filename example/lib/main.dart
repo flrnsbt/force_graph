@@ -79,7 +79,7 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
   String _layoutAlgorithm = 'spring';
   late ForceGraphController _controller;
 
-  ForceGraphNode? _inspectedNode;
+  List<ForceGraphNode> _selectedNodes = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -127,18 +127,14 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
   void _handleSelectionChanged(List<ForceGraphNode> selectedNodes) {
     if (!mounted) return;
     setState(() {
-      if (selectedNodes.isNotEmpty) {
-        _inspectedNode = selectedNodes.last;
-      } else {
-        _inspectedNode = null;
-      }
+      _selectedNodes = selectedNodes;
     });
   }
 
   void _loadDataset(GraphDataset dataset) {
     setState(() {
       _currentDataset = dataset;
-      _inspectedNode = null;
+      _selectedNodes = [];
       _searchController.clear();
       _layoutAlgorithm = switch (dataset.id) {
         'dependencies' => 'hierarchical',
@@ -155,7 +151,7 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
   void _changeLayout(String layout) {
     setState(() {
       _layoutAlgorithm = layout;
-      _inspectedNode = null;
+      _selectedNodes = [];
       _controller.graphBuilder = _createBuilder();
     });
   }
@@ -368,23 +364,26 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
           Positioned(
             top: 0,
             left: 0,
-            right: 64,
-            child: _buildTopBar(context, isCompact),
+            right: isCompact ? 0 : 80,
+            child: ListenableBuilder(
+              listenable: _controller,
+              builder: (context, _) => _buildTopBar(context, isCompact),
+            ),
           ),
 
-          // Side Inspector Panel (when node selected)
-          if (_inspectedNode != null)
+          // Side Inspector Panel (when nodes selected)
+          if (_selectedNodes.isNotEmpty)
             Positioned(
               top: isCompact ? null : 80,
               bottom: isCompact ? 70 : 20,
               right: isCompact ? 16 : 24,
               left: isCompact ? 16 : null,
-              child: NodeInspectorPanel(
-                node: _inspectedNode!,
+              child: NodesInspectorPanel(
+                nodes: _selectedNodes,
                 controller: _controller,
                 onClose: () {
                   setState(() {
-                    _inspectedNode = null;
+                    _selectedNodes = [];
                     _controller.clearSelection();
                   });
                 },
@@ -392,11 +391,9 @@ class _GraphShowcasePageState extends State<GraphShowcasePage> {
                   _controller.selectNode(neighborId);
                   _controller.zoomOnNode(neighborId);
                 },
-                onDelete: () {
-                  final id = _inspectedNode!.iD;
+                onDelete: (nodeId) {
                   setState(() {
-                    _inspectedNode = null;
-                    _controller.removeNode(id);
+                    _controller.removeNode(nodeId);
                   });
                 },
               ),

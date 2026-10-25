@@ -1,7 +1,5 @@
 FVM_STANDALONE=$(HOME)/fvm/bin/fvm
 GET_FVM= $$(command -v fvm 2>/dev/null || echo "$(FVM_STANDALONE)")
-BUILD_NUM := $(shell date +%Y%m%d.%H%M%S)
-
 
 ensure-fvm:
 	@if command -v fvm >/dev/null 2>&1; then \
@@ -27,8 +25,6 @@ build-ci: clean
 		--no-pub \
 		--no-web-resources-cdn \
 		--optimization-level=4 \
-		--dart-define=BUILD_NUMBER=$(BUILD_NUM) \
-		--web-define=BUILD_NUMBER=$(BUILD_NUM) \
 		--tree-shake-icons \
 		--no-source-maps \
 		--strip-wasm

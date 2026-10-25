@@ -492,6 +492,9 @@ class ForceGraphController extends ChangeNotifier {
         final processedNodes = await _performLayout(data);
         await _loadData(processedNodes);
         _startTicker();
+      } else {
+        _isReady = true;
+        _startTicker();
       }
       if (_completer != null && _completer!.isCompleted == false) {
         _completer!.complete();
@@ -1298,7 +1301,17 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
     final worldPos = viewportController.screenToWorld(screenPos);
     final node = findBodyAt(worldPos);
     if (node != null) {
-      node.onTap();
+      // Support shift+click for multi-selection
+      if (HardwareKeyboard.instance.isShiftPressed) {
+        // Toggle this node without clearing others
+        node.selected = !node.selected;
+      } else {
+        // Single click: select only this node
+        if (!node.selected) {
+          clearSelection();
+        }
+        node.onTap();
+      }
     } else {
       clearSelection();
     }
@@ -1377,8 +1390,6 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       return;
     }
 
-    final scale = details.scale;
-
     if (_mouseJoint != null) {
       _isDraggingNode = true;
       final worldTarget = viewportController.screenToWorld(
@@ -1389,19 +1400,6 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       _isDraggingNode = false;
       stopSelecting();
       viewportController.addPan(details.focalPointDelta);
-    } else if (scale != 1.0) {
-      double dt = scale - 1;
-      if (dt.isNegative) {
-        dt /= 20;
-      } else {
-        dt /= 40;
-      }
-      final zoomScale = 1 + dt;
-      viewportController.multiplyZoom(
-        zoomScale,
-        focalPoint: details.localFocalPoint,
-        animationDuration: Duration.zero,
-      );
     }
   }
 
@@ -1412,6 +1410,28 @@ extension ForceGraphControllerControlsExtension on ForceGraphController {
       stopDragging();
     }
     if (isSelecting) {
+      // Select all nodes within the selection rectangle
+      final rect = worldSelectionRect;
+      if (rect != null) {
+        final nodesInRect = <String>[];
+        for (final node in _nodes.values) {
+          final pos = node.position;
+          if (rect.contains(pos.toOffset())) {
+            nodesInRect.add(node.iD);
+          }
+        }
+        if (nodesInRect.isNotEmpty) {
+          // If shift is held, add to existing selection; otherwise replace
+          if (HardwareKeyboard.instance.isShiftPressed) {
+            for (final id in nodesInRect) {
+              _nodes[id]?.selected = true;
+            }
+          } else {
+            clearSelection();
+            selectNodes(nodesInRect);
+          }
+        }
+      }
       stopSelecting();
     }
     _isDraggingNode = false;
